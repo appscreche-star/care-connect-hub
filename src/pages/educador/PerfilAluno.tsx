@@ -1,0 +1,246 @@
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useData, type RegistroDiario } from '@/contexts/DataProvider';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/hooks/use-toast';
+import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert } from 'lucide-react';
+
+const moods = [
+  { label: 'Feliz', icon: Smile, emoji: '😊' },
+  { label: 'Tranquilo', icon: Meh, emoji: '😌' },
+  { label: 'Cansado', icon: MoonIcon, emoji: '😴' },
+  { label: 'Manhoso', icon: Frown, emoji: '😢' },
+];
+
+const PerfilAluno = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { alunos, loading, addRegistro, registros, fetchRegistrosAluno } = useData();
+  const aluno = alunos.find(a => a.id === id);
+
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [sleeping, setSleeping] = useState(false);
+  const [mlBottle, setMlBottle] = useState('');
+
+  useEffect(() => {
+    if (id) fetchRegistrosAluno(id);
+  }, [id, fetchRegistrosAluno]);
+
+  useEffect(() => {
+    // Basic logic to determine current status based on last registros
+    const lastCheckin = registros.find(r => r.tipo_registro === 'presenca');
+    if (lastCheckin) setCheckedIn(lastCheckin.detalhes?.status === 'entrada');
+
+    const lastMood = registros.find(r => r.tipo_registro === 'bemestar');
+    if (lastMood) setSelectedMood(lastMood.detalhes?.humor);
+
+    const lastSleep = registros.find(r => r.tipo_registro === 'sono');
+    if (lastSleep) setSleeping(lastSleep.detalhes?.status === 'dormindo');
+  }, [registros]);
+
+  if (loading || !aluno) {
+    if (!aluno && !loading) return <div className="p-8 text-center"><p>Aluno não encontrado</p><Button variant="link" onClick={() => navigate(-1)}>Voltar</Button></div>;
+    return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  const handleAction = async (tipo: string, detalhes: any, msg: string) => {
+    await addRegistro({ aluno_id: aluno.id, tipo_registro: tipo, detalhes });
+    await fetchRegistrosAluno(aluno.id);
+  };
+
+  return (
+    <div className="space-y-4 pb-8">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground min-h-[44px]">
+        <ArrowLeft className="h-4 w-4" /> Voltar
+      </button>
+
+      <div className="flex items-center gap-4">
+        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary">{aluno.nome[0]}</div>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">{aluno.nome}</h1>
+          <p className="text-sm text-muted-foreground">{aluno.idade || 'Idade não informada'}</p>
+        </div>
+      </div>
+
+      {/* Alertas de Saúde */}
+      {(aluno.alergias || aluno.saude_observacoes || aluno.restricoes_alimentares || aluno.medicamentos_uso_continuo || aluno.tipo_sanguineo) && (
+        <Card className="rounded-2xl border-destructive/20 bg-destructive/5 overflow-hidden">
+          <div className="bg-destructive/10 px-4 py-2 flex items-center gap-2 text-destructive font-bold text-xs uppercase tracking-wider">
+            <ShieldAlert className="h-4 w-4" /> Alertas Críticos de Saúde
+          </div>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {aluno.alergias && (
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Alergias</p>
+                  <p className="text-sm font-bold text-destructive">{aluno.alergias}</p>
+                </div>
+              )}
+              {aluno.tipo_sanguineo && (
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Tipo Sanguíneo</p>
+                  <p className="text-sm font-bold text-foreground font-mono">{aluno.tipo_sanguineo}</p>
+                </div>
+              )}
+              {aluno.restricoes_alimentares && (
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Restrições Alimentares</p>
+                  <p className="text-sm font-semibold text-foreground">{aluno.restricoes_alimentares}</p>
+                </div>
+              )}
+              {aluno.medicamentos_uso_continuo && (
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Uso de Medicamentos</p>
+                  <p className="text-sm font-semibold text-foreground">{aluno.medicamentos_uso_continuo}</p>
+                </div>
+              )}
+              {aluno.saude_observacoes && (
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Obsservações Gerais</p>
+                  <p className="text-sm text-foreground">{aluno.saude_observacoes}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Presença */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base">Presença</CardTitle></CardHeader>
+        <CardContent>
+          <Button
+            className={`w-full h-14 rounded-xl text-base gap-3 ${checkedIn ? 'bg-destructive hover:bg-destructive/90' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+            onClick={() => handleAction('presenca', { status: checkedIn ? 'saida' : 'entrada' }, checkedIn ? 'Check-out realizado' : 'Check-in realizado')}
+          >
+            {checkedIn ? <><LogOut className="h-5 w-5" /> Check-out</> : <><LogIn className="h-5 w-5" /> Check-in</>}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Bem-estar */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base">Bem-estar</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-2">
+            {moods.map(m => (
+              <button
+                key={m.label}
+                onClick={() => handleAction('bemestar', { humor: m.label, emoji: m.emoji }, `Humor: ${m.label}`)}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all min-h-[72px] ${selectedMood === m.label ? 'bg-primary/10 ring-2 ring-primary' : 'bg-accent/50 hover:bg-accent'}`}
+              >
+                <span className="text-2xl">{m.emoji}</span>
+                <span className="text-[10px] font-medium text-foreground">{m.label}</span>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Alimentação */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><UtensilsCrossed className="h-4 w-4" /> Alimentação</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            {['Aceitou tudo', 'Aceitou metade', 'Recusou'].map(opt => (
+              <Button key={opt} variant="outline" className="rounded-xl h-12 text-xs" onClick={() => handleAction('alimentacao', { status: opt, ml: mlBottle }, `Alimentação: ${opt}`)}>
+                {opt}
+              </Button>
+            ))}
+          </div>
+          <Input placeholder="ml da mamadeira (opcional)" type="number" value={mlBottle} onChange={e => setMlBottle(e.target.value)} className="rounded-xl" />
+        </CardContent>
+      </Card>
+
+      {/* Sono */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><MoonIcon className="h-4 w-4" /> Sono</CardTitle></CardHeader>
+        <CardContent>
+          <Button
+            className={`w-full h-14 rounded-xl text-base gap-3 ${sleeping ? 'bg-purple-500 hover:bg-purple-600' : ''}`}
+            variant={sleeping ? 'default' : 'outline'}
+            onClick={() => handleAction('sono', { status: sleeping ? 'acordado' : 'dormindo' }, sleeping ? 'Soneca encerrada' : 'Soneca iniciada')}
+          >
+            <MoonIcon className="h-5 w-5" /> {sleeping ? 'Encerrar Soneca' : 'Iniciar Soneca'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Evacuação */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Baby className="h-4 w-4" /> Evacuação</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-2">
+            {['Fralda Seca', 'Xixi', 'Cocô Normal', 'Cocô Alterado'].map(opt => (
+              <Button key={opt} variant="outline" className="rounded-xl h-12 text-sm" onClick={() => handleAction('fralda', { status: opt }, `Fralda: ${opt}`)}>
+                {opt}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mochila */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShirtIcon className="h-4 w-4" /> Mochila</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-2">
+            {['Fralda', 'Pomada', 'Roupa'].map(item => (
+              <AlertDialog key={item}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="rounded-xl h-12 text-xs">Solicitar {item}</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-2xl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Solicitar {item}</AlertDialogTitle>
+                    <AlertDialogDescription>Confirma a solicitação de {item.toLowerCase()} para {aluno.nome}? O responsável será notificado.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className="rounded-xl" onClick={() => handleAction('mochila', { item }, `${item} solicitada`)}>Confirmar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Álbum */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Camera className="h-4 w-4" /> Álbum / Atividades</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <Button variant="outline" className="w-full rounded-xl h-12 gap-2" disabled><Camera className="h-4 w-4" /> Upload de Foto (Bloqueado)</Button>
+          <Input placeholder="Legenda da foto" className="rounded-xl" />
+          <div className="flex items-center gap-2">
+            <Checkbox id="primeira-vez" />
+            <label htmlFor="primeira-vez" className="text-sm text-foreground">Marcar como Primeira Vez / Conquista</label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recados */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Recados</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea id="recado-texto" placeholder="Escreva um recado para os pais..." className="rounded-xl min-h-[80px]" />
+          <Button className="rounded-xl w-full" onClick={() => {
+            const el = document.getElementById('recado-texto') as HTMLTextAreaElement;
+            handleAction('recado', { mensagem: el.value }, 'Recado enviado');
+            el.value = '';
+          }}>
+            Enviar Recado
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default PerfilAluno;
