@@ -25,15 +25,16 @@ Aplicativo web responsivo de gestão de creches com três áreas distintas (Admi
 ## Fase 2: Área do Administrador (Desktop-first)
 
 ### Layout
-- Sidebar fixa à esquerda com menu: Visão Geral, Turmas, Alunos, Educadores, Configurações
+- Sidebar fixa à esquerda com menu: Visão Geral, Turmas, Alunos, Educadores, Saúde, Configurações
 - Header com sino de notificações (Sheet lateral com histórico)
 
 ### Páginas
-1. **Dashboard** (`/admin/dashboard`): Cards resumo (total alunos, turmas, educadores), atividade recente
-2. **Turmas** (`/admin/turmas`): Tabela CRUD — criar, editar, excluir turmas
-3. **Alunos** (`/admin/alunos`): Tabela com foto, nome, turma, ações (editar, vincular responsável)
-4. **Educadores** (`/admin/educadores`): Tabela com alocação por turma
-5. **Configurações** (`/admin/configuracoes`): Upload de logotipo + seletor de cor hexadecimal que atualiza `--primary` em tempo real
+1. **Dashboard** (`/admin/dashboard`): Cards resumo (total alunos, turmas, educadores), atividade recente, widgets de ocupação.
+2. **Turmas** (`/admin/turmas`): Tabela CRUD com capacidade, faixa etária e alertas visuais de lotação e falta de regente.
+3. **Alunos** (`/admin/alunos`): Prontuário digital completo com abas para Dados/Saúde, Família (múltiplos responsáveis) e Pessoas Autorizadas para Retirada. Validação de responsável financeiro.
+4. **Educadores** (`/admin/educadores`): Gestão de RH completa com filtros por turno/especialidade, campos de CPF, formação acadêmica e contato de emergência.
+5. **Saúde** (`/admin/saude`): Módulo de agendamento de medicamentos, livro de ocorrências/acidentes e controle de vacinação.
+6. **Configurações** (`/admin/configuracoes`): Upload de logotipo + seletor de cor hexadecimal que atualiza `--primary` em tempo real.
 
 ---
 
@@ -44,66 +45,20 @@ Aplicativo web responsivo de gestão de creches com três áreas distintas (Admi
 - Sem sidebar — navegação por cards e botão voltar
 
 ### Páginas
-1. **Home da Turma** (`/educador/turma`): Grid de cards com foto e nome de cada aluno. Botão flutuante "Ação em Lote" (ex: marcar alimentação para todos)
+1. **Home da Turma** (`/educador/turma`): Grid de cards com foto e nome de cada aluno. Botão flutuante "Ação em Lote" (ex: marcar alimentação para todos).
 2. **Perfil do Aluno** (`/educador/aluno/:id`): Painel com botões grandes de ícone organizados em grid:
    - **Presença**: Toggle Check-in / Check-out
-   - **Bem-estar**: 4 ícones (Feliz, Tranquilo, Cansado, Manhoso) — seleção instantânea com toast
-   - **Alimentação**: 3 opções rápidas + campo opcional de ml
-   - **Sono**: Botões Início/Fim com relógio
-   - **Evacuação**: Botões Fralda Seca, Xixi, Cocô (Normal/Alterado)
-   - **Mochila**: Botões "Solicitar Fralda/Pomada/Roupa" com modal de confirmação
-   - **Álbum**: Upload de foto + legenda + checkbox "Primeira Vez"
-   - **Recados**: Caixa de texto para anotações
-   - **Saúde**: Lista de remédios cadastrados pelos pais + botão check "Administrado"
+   - **Bem-estar**: 4 ícones (Feliz, Tranquilo, Cansado, Manhosos)
+   - **Alimentação**: 3 opções rápidas + ml
+   - **Sono**: Botões Início/Fim
+   - **Evacuação**: Botões Fralda Seca, Xixi, Cocô
+   - **Saúde**: Lista de remédios cadastrados + botão check de administração.
 
 ---
-
-## Fase 4: Área do Responsável (Mobile-first)
-
-### Layout
-- Header com foto da criança, semáforo de bem-estar e botão fixo "Estou Chegando"
-- Bottom Navigation: Hoje, Galeria, Saúde/Mochila, Calendário
-
-### Páginas
-1. **Hoje** (`/pais/hoje`): Timeline vertical cronológica com ícones coloridos (chegada, alimentação, fralda, sono). Empty state amigável quando não há registros
-2. **Galeria** (`/pais/galeria`): Duas abas — "Dia a dia" e "Primeiras Vezes". Grid de fotos com opção de download
-3. **Saúde/Mochila** (`/pais/mochila`): Lista de solicitações de reposição + formulário de envio de medicamentos (nome, horário, dosagem)
-4. **Calendário** (`/pais/calendario`): Lista de eventos da creche com botão "Salvar no celular" (exporta .ics)
-
-### Notificações
-- Sino com badge no header
-- Sheet lateral com histórico mockado
-
----
-
-## Fase 5: Polish e UX
-
-### Feedback Visual
-- Toasts verdes de sucesso em todas as ações
-- Modais de confirmação para ações sensíveis (solicitar item, marcar medicamento)
-- Transições suaves (animate-fade-in, transition-all duration-300) em botões e abas
-
-### Acessibilidade
-- Touch targets mínimos de 44x44px em todas as áreas mobile
-- Alto contraste textual (slate-900 / slate-600)
-- Empty states com ilustrações amigáveis
-
-### Optimistic UI
-- Ações refletem sucesso instantaneamente na interface
-- Ícone de status de conexão no header
-
----
-
-## Dados Mockados
-- **Instituição**: "Creche Arco-Íris", logo placeholder, cor primária #4F46E5
-- **Turmas**: Berçário, Maternal I, Maternal II
-- **Alunos**: Joãozinho (2 anos), Maria (1a6m), Pedro (2a3m), Ana (1a8m)
-- **Timeline**: Eventos realistas com horários, ícones e cores
-- **Notificações**: Solicitação de fralda, cardápio novo, aviso de chegada
 
 ## Rotas
 - `/login`
-- `/admin/dashboard`, `/admin/turmas`, `/admin/alunos`, `/admin/educadores`, `/admin/configuracoes`
+- `/admin/dashboard`, `/admin/turmas`, `/admin/alunos`, `/admin/educadores`, `/admin/saude`, `/admin/configuracoes`
 - `/educador/turma`, `/educador/aluno/:id`
 - `/pais/hoje`, `/pais/galeria`, `/pais/mochila`, `/pais/calendario`
 

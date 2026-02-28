@@ -7,7 +7,7 @@ export interface Instituicao {
 
 export interface Usuario {
   id: string;
-  role: 'admin' | 'educador' | 'responsavel';
+  role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel';
   nome: string;
   email: string;
   instituicao_id: string;
@@ -17,7 +17,11 @@ export interface Turma {
   id: string;
   nome_turma: string;
   instituicao_id: string;
-  educador_id: string;
+  periodo: 'Manhã' | 'Tarde' | 'Integral';
+  professor_id?: string | null;
+  capacidade_maxima?: number;
+  faixa_etaria_min?: number;
+  faixa_etaria_max?: number;
 }
 
 export interface Aluno {
@@ -27,6 +31,8 @@ export interface Aluno {
   foto_url: string;
   turma_id: string | null;
   idade: string;
+  alergias?: string;
+  restricoes_alimentares?: string;
 }
 
 export interface RegistroDiario {
@@ -64,6 +70,15 @@ export interface Medicamento {
   administrado: boolean;
 }
 
+export interface Ocorrencia {
+  id: string;
+  aluno_id: string;
+  titulo: string;
+  descricao: string;
+  data_hora: string;
+  status: 'Pendente' | 'Notificado' | 'Resolvido';
+}
+
 export const instituicao: Instituicao = {
   id: '1',
   nome: 'Creche Arco-Íris',
@@ -72,41 +87,31 @@ export const instituicao: Instituicao = {
 };
 
 export const usuarios: Usuario[] = [
-  { id: '1', role: 'admin', nome: 'Carolina Silva', email: 'admin@creche.com', instituicao_id: '1' },
-  { id: '2', role: 'educador', nome: 'Professora Ana', email: 'ana@creche.com', instituicao_id: '1' },
-  { id: '3', role: 'responsavel', nome: 'Mariana Santos', email: 'mariana@email.com', instituicao_id: '1' },
+  { id: '1', role: 'Admin', nome: 'Carolina Silva', email: 'admin@creche.com', instituicao_id: '1' },
+  { id: '2', role: 'Professor', nome: 'Professora Ana', email: 'ana@creche.com', instituicao_id: '1' },
+  { id: '3', role: 'Responsavel', nome: 'Mariana Santos', email: 'mariana@email.com', instituicao_id: '1' },
+  { id: '4', role: 'Coordenador', nome: 'Carlos Oliveira', email: 'carlos@creche.com', instituicao_id: '1' },
 ];
 
 export const turmas: Turma[] = [
-  { id: '1', nome_turma: 'Berçário', instituicao_id: '1', educador_id: '2' },
-  { id: '2', nome_turma: 'Maternal I', instituicao_id: '1', educador_id: '2' },
-  { id: '3', nome_turma: 'Maternal II', instituicao_id: '1', educador_id: '2' },
+  { id: '1', nome_turma: 'Berçário', instituicao_id: '1', periodo: 'Integral', capacidade_maxima: 10 },
+  { id: '2', nome_turma: 'Maternal I', instituicao_id: '1', periodo: 'Manhã', capacidade_maxima: 15 },
+  { id: '3', nome_turma: 'Maternal II', instituicao_id: '1', periodo: 'Tarde', capacidade_maxima: 20 },
 ];
 
 export const alunos: Aluno[] = [
-  { id: '1', nome: 'Joãozinho', data_nascimento: '2024-02-15', foto_url: '', turma_id: '1', idade: '2 anos' },
+  { id: '1', nome: 'Joãozinho', data_nascimento: '2024-02-15', foto_url: '', turma_id: '1', idade: '2 anos', alergias: 'Amendoim' },
   { id: '2', nome: 'Maria', data_nascimento: '2024-08-20', foto_url: '', turma_id: '1', idade: '1a 6m' },
   { id: '3', nome: 'Pedro', data_nascimento: '2023-11-10', foto_url: '', turma_id: '2', idade: '2a 3m' },
-  { id: '4', nome: 'Ana', data_nascimento: '2024-06-05', foto_url: '', turma_id: '2', idade: '1a 8m' },
-  { id: '5', nome: 'Lucas', data_nascimento: '2024-01-12', foto_url: '', turma_id: '3', idade: '2a 1m' },
-  { id: '6', nome: 'Sofia', data_nascimento: '2024-04-28', foto_url: '', turma_id: '3', idade: '1a 10m' },
+  { id: '4', nome: 'Ana', data_nascimento: '2024-06-05', foto_url: '', turma_id: '2', idade: '1a 8m', restricoes_alimentares: 'Lactose' },
 ];
 
 export const registrosDiarios: RegistroDiario[] = [
-  { id: '1', alunoId: '1', data: '2026-02-26', hora: '08:00', tipo: 'chegada', detalhes: 'Check-in realizado', cor: 'text-emerald-500', icone: 'DoorOpen' },
-  { id: '2', alunoId: '1', data: '2026-02-26', hora: '09:30', tipo: 'alimentacao', detalhes: 'Lanche: Maçã raspada — Aceitou tudo', cor: 'text-blue-500', icone: 'Apple' },
-  { id: '3', alunoId: '1', data: '2026-02-26', hora: '10:15', tipo: 'fralda', detalhes: 'Fralda trocada — Xixi', cor: 'text-slate-400', icone: 'Baby' },
-  { id: '4', alunoId: '1', data: '2026-02-26', hora: '11:00', tipo: 'bemestar', detalhes: 'Humor: Feliz 😊', cor: 'text-yellow-500', icone: 'Smile' },
-  { id: '5', alunoId: '1', data: '2026-02-26', hora: '12:00', tipo: 'alimentacao', detalhes: 'Almoço: Arroz, feijão e frango — Aceitou metade', cor: 'text-blue-500', icone: 'UtensilsCrossed' },
-  { id: '6', alunoId: '1', data: '2026-02-26', hora: '13:00', tipo: 'sono', detalhes: 'Soneca: Dormiu por 1h20min', cor: 'text-purple-500', icone: 'Moon' },
-  { id: '7', alunoId: '1', data: '2026-02-26', hora: '15:00', tipo: 'alimentacao', detalhes: 'Lanche da tarde: Suco e bolacha — Aceitou tudo', cor: 'text-blue-500', icone: 'Apple' },
+  { id: '1', alunoId: '1', data: '2026-02-28', hora: '08:00', tipo: 'chegada', detalhes: 'Check-in realizado', cor: 'text-emerald-500', icone: 'DoorOpen' },
 ];
 
 export const notificacoes: Notificacao[] = [
   { id: '1', mensagem: '🔴 Joãozinho: Fralda G solicitada', tempo: 'Há 10 min', lida: false, tipo: 'urgente' },
-  { id: '2', mensagem: '🟢 Turma Berçário: Novo cardápio da semana disponível', tempo: 'Há 2 horas', lida: false, tipo: 'info' },
-  { id: '3', mensagem: '🟡 Maria: Pai a caminho', tempo: 'Há 30 min', lida: true, tipo: 'sucesso' },
-  { id: '4', mensagem: '🔴 Pedro: Pomada para assaduras solicitada', tempo: 'Há 1 hora', lida: true, tipo: 'urgente' },
 ];
 
 export const eventosCalendario: EventoCalendario[] = [
@@ -118,7 +123,10 @@ export const eventosCalendario: EventoCalendario[] = [
 
 export const medicamentos: Medicamento[] = [
   { id: '1', alunoId: '1', nome: 'Paracetamol Gotas', horario: '14:00', dosagem: '5 gotas', administrado: false },
-  { id: '2', alunoId: '1', nome: 'Vitamina D', horario: '10:00', dosagem: '2 gotas', administrado: true },
+];
+
+export const ocorrencias: Ocorrencia[] = [
+  { id: '1', aluno_id: '1', titulo: 'Febre leve', descricao: 'Aluno apresentou 37.8 de febre', data_hora: '2026-02-28 10:30', status: 'Notificado' },
 ];
 
 export const fotosGaleria = [

@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NavLink } from '@/components/NavLink';
 import NotificationSheet from '@/components/NotificationSheet';
 import OnlineStatus from '@/components/OnlineStatus';
-import { LayoutDashboard, Users, GraduationCap, BookOpen, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, BookOpen, Settings, LogOut, HeartPulse } from 'lucide-react';
 import {
   SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel,
   SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
@@ -16,6 +16,7 @@ const links = [
   { title: 'Turmas', url: '/admin/turmas', icon: BookOpen },
   { title: 'Alunos', url: '/admin/alunos', icon: Users },
   { title: 'Educadores', url: '/admin/educadores', icon: GraduationCap },
+  { title: 'Saúde', url: '/admin/saude', icon: HeartPulse },
   { title: 'Configurações', url: '/admin/configuracoes', icon: Settings },
 ];
 
