@@ -11,6 +11,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Turmas from "./pages/admin/Turmas";
 import Alunos from "./pages/admin/Alunos";
 import Educadores from "./pages/admin/Educadores";
+import Saude from "./pages/admin/Saude";
 import Configuracoes from "./pages/admin/Configuracoes";
 import EducadorLayout from "./layouts/EducadorLayout";
 import HomeTurma from "./pages/educador/HomeTurma";
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="turmas" element={<Turmas />} />
                 <Route path="alunos" element={<Alunos />} />
                 <Route path="educadores" element={<Educadores />} />
+                <Route path="saude" element={<Saude />} />
                 <Route path="configuracoes" element={<Configuracoes />} />
               </Route>
               <Route path="/educador" element={<EducadorLayout />}>

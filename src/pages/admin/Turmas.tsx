@@ -1,36 +1,43 @@
 import { useState } from 'react';
 import { useData, type Turma } from '@/contexts/DataProvider';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2, Clock, User } from 'lucide-react';
+import { Plus, Pencil, Loader2, Trash2, Users, BookOpen, AlertCircle, ShieldAlert, GraduationCap, Calendar, UserCheck } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const Turmas = () => {
-  const { turmas, alunos, perfis, loading, addTurma, deleteTurma, updateTurma } = useData();
+  const { turmas, perfis, loading, addTurma, updateTurma, deleteTurma } = useData();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Turma>>({
     nome_turma: '',
-    periodo: 'integral',
-    horario_entrada: '08:00',
-    horario_saida: '17:00',
-    educador_id: ''
+    periodo: 'Manhã',
+    professor_id: 'none',
+    ano_letivo: new Date().getFullYear().toString(),
+    capacidade_maxima: 20,
+    faixa_etaria_min: 0,
+    faixa_etaria_max: 2
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleSave = async () => {
-    if (!formData.nome_turma?.trim()) return;
+    if (!formData.nome_turma) return;
+    const finalData = { ...formData, professor_id: formData.professor_id === 'none' ? null : formData.professor_id };
+
     if (editingId) {
-      await updateTurma(editingId, formData);
+      await updateTurma(editingId, finalData);
     } else {
-      await addTurma(formData);
+      await addTurma(finalData as any);
     }
-    setFormData({ nome_turma: '', periodo: 'integral', horario_entrada: '08:00', horario_saida: '17:00', educador_id: '' });
-    setEditingId(null);
     setOpen(false);
+    setFormData({ nome_turma: '', periodo: 'Manhã', professor_id: 'none', ano_letivo: '2026', capacidade_maxima: 20, faixa_etaria_min: 0, faixa_etaria_max: 2 });
+    setEditingId(null);
   };
 
   const handleEdit = (turma: Turma) => {
@@ -38,132 +45,155 @@ const Turmas = () => {
     setFormData({
       nome_turma: turma.nome_turma,
       periodo: turma.periodo,
-      horario_entrada: turma.horario_entrada,
-      horario_saida: turma.horario_saida,
-      educador_id: turma.educador_id || ''
+      professor_id: turma.professor_id || 'none',
+      ano_letivo: turma.ano_letivo || '2026',
+      capacidade_maxima: turma.capacidade_maxima || 20,
+      faixa_etaria_min: turma.faixa_etaria_min || 0,
+      faixa_etaria_max: turma.faixa_etaria_max || 2
     });
     setOpen(true);
   };
 
-  const getEducadorName = (id?: string) => {
-    if (!id) return 'Não atribuído';
-    return perfis.find(p => p.id === id)?.nome || 'Não encontrado';
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Gestão de Turmas</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Gestão de Turmas e Salas</h1>
+          <p className="text-sm text-muted-foreground">Controle de ocupação, regentes e faixas etárias.</p>
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="rounded-xl gap-2"><Plus className="h-4 w-4" /> Nova Turma</Button>
+            <Button className="rounded-xl gap-2 h-11 px-6 shadow-lg shadow-primary/20"><Plus className="h-4 w-4" /> Nova Turma</Button>
           </DialogTrigger>
-          <DialogContent className="rounded-2xl sm:max-w-md">
-            <DialogHeader><DialogTitle>{editingId ? 'Editar Turma' : 'Criar Nova Turma'}</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>Nome da Turma</Label>
-                <Input value={formData.nome_turma} onChange={e => setFormData(p => ({ ...p, nome_turma: e.target.value }))} placeholder="Ex: Berçário II" className="rounded-xl" />
-              </div>
-
+          <DialogContent className="rounded-2xl sm:max-w-xl border-none shadow-2xl p-0 overflow-hidden">
+            <DialogHeader className="p-6 bg-muted/20">
+              <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> {editingId ? 'Configurar Turma' : 'Criar Nova Turma'}</DialogTitle>
+            </DialogHeader>
+            <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label>Identificação da Sala/Turma</Label>
+                  <Input value={formData.nome_turma} onChange={e => setFormData(p => ({ ...p, nome_turma: e.target.value }))} placeholder="Ex: Berçário I - A" className="rounded-xl h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ano Letivo</Label>
+                  <Input value={formData.ano_letivo} onChange={e => setFormData(p => ({ ...p, ano_letivo: e.target.value }))} placeholder="2026" className="rounded-xl h-11" />
+                </div>
                 <div className="space-y-2">
                   <Label>Período</Label>
-                  <Select value={formData.periodo} onValueChange={val => setFormData(p => ({ ...p, periodo: val as any }))}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="manha">Manhã</SelectItem><SelectItem value="tarde">Tarde</SelectItem><SelectItem value="integral">Integral</SelectItem></SelectContent>
+                  <Select value={formData.periodo} onValueChange={(val: any) => setFormData(p => ({ ...p, periodo: val }))}>
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Manhã">Manhã</SelectItem>
+                      <SelectItem value="Tarde">Tarde</SelectItem>
+                      <SelectItem value="Integral">Integral</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Educador Responsável</Label>
-                  <Select value={formData.educador_id || "none"} onValueChange={val => setFormData(p => ({ ...p, educador_id: val === "none" ? "" : val }))}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <Label>Capacidade Máxima</Label>
+                  <Input type="number" value={formData.capacidade_maxima} onChange={e => setFormData(p => ({ ...p, capacidade_maxima: parseInt(e.target.value) }))} className="rounded-xl h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Faixa Etária (Min - Max)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input type="number" placeholder="Anos" value={formData.faixa_etaria_min} onChange={e => setFormData(p => ({ ...p, faixa_etaria_min: parseInt(e.target.value) }))} className="rounded-xl h-11" />
+                    <span className="text-muted-foreground">-</span>
+                    <Input type="number" placeholder="Anos" value={formData.faixa_etaria_max} onChange={e => setFormData(p => ({ ...p, faixa_etaria_max: parseInt(e.target.value) }))} className="rounded-xl h-11" />
+                  </div>
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Professor Regente</Label>
+                  <Select value={formData.professor_id} onValueChange={(val) => setFormData(p => ({ ...p, professor_id: val }))}>
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Selecione...</SelectItem>
-                      {perfis.filter(p => p.role === 'educador').map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                      {perfis.filter(p => p.role === 'Professor').map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Entrada</Label>
-                  <Input type="time" value={formData.horario_entrada} onChange={e => setFormData(p => ({ ...p, horario_entrada: e.target.value }))} className="rounded-xl" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Saída</Label>
-                  <Input type="time" value={formData.horario_saida} onChange={e => setFormData(p => ({ ...p, horario_saida: e.target.value }))} className="rounded-xl" />
-                </div>
-              </div>
-
-              <Button className="w-full rounded-xl h-12 text-base font-semibold mt-4" onClick={handleSave}>
-                {editingId ? 'Salvar Alterações' : 'Criar Turma'}
-              </Button>
+              <Button className="w-full rounded-xl h-12 text-base font-semibold shadow-xl shadow-primary/20" onClick={handleSave}>Confirmar Configuração</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="rounded-2xl overflow-hidden border-none shadow-sm">
+      <Card className="rounded-3xl border-none shadow-sm overflow-hidden bg-card">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead>Turma / Período</TableHead>
-                <TableHead>Educador</TableHead>
-                <TableHead>Horário</TableHead>
-                <TableHead>Alunos</TableHead>
-                <TableHead className="w-24 text-right pr-6">Ações</TableHead>
+            <TableHeader className="bg-muted/30 border-none">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="py-4 font-bold pl-6">Turma / Sala</TableHead>
+                <TableHead className="py-4 font-bold">Responsável (Regente)</TableHead>
+                <TableHead className="py-4 font-bold">Ocupação / Vagas</TableHead>
+                <TableHead className="py-4 font-bold text-right pr-6">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {turmas.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">Clique em "Nova Turma" para começar.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground">Nenhuma turma configurada no momento.</TableCell></TableRow>
               ) : (
-                turmas.map(t => (
-                  <TableRow key={t.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell>
-                      <div className="font-semibold text-foreground">{t.nome_turma}</div>
-                      <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t.periodo || 'N/A'}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="h-3 w-3 text-muted-foreground" />
-                        {getEducadorName(t.educador_id)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {t.horario_entrada?.slice(0, 5)} - {t.horario_saida?.slice(0, 5)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-6 w-10 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {alunos.filter(a => a.turma_id === t.id).length}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right pr-4">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => handleEdit(t)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive" onClick={() => deleteTurma(t.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                turmas.map(t => {
+                  const numAlunos = 0; // Seria calculado via relacionamento Real
+                  const occupancy = (numAlunos / (t.capacidade_maxima || 20)) * 100;
+                  const professor = perfis.find(p => p.id === t.professor_id);
+
+                  return (
+                    <TableRow key={t.id} className="hover:bg-muted/20 transition-all border-b border-muted/20">
+                      <TableCell className="pl-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-2xl bg-primary/5 text-primary flex items-center justify-center font-bold relative border border-primary/10">
+                            <BookOpen className="h-5 w-5" />
+                            <Badge className="absolute -top-2 -right-2 px-1 text-[8px] h-4 min-w-4 rounded-full bg-primary text-white flex items-center justify-center border-2 border-background">
+                              {t.ano_letivo || '26'}
+                            </Badge>
+                          </div>
+                          <div>
+                            <p className="font-bold text-primary">{t.nome_turma}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Badge variant="secondary" className="text-[9px] font-bold rounded-md bg-muted/60">{t.periodo.toUpperCase()}</Badge>
+                              <span className="text-[10px] text-muted-foreground">• {t.faixa_etaria_min}-{t.faixa_etaria_max} anos</span>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {professor ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-accent-foreground">{professor.nome[0]}</div>
+                            <span className="text-sm font-semibold">{professor.nome}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-destructive font-bold text-[10px] px-2 py-1 bg-destructive/10 rounded-lg border border-destructive/20 w-fit">
+                            <ShieldAlert className="h-3 w-3" /> SEM REGENTE
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1.5 max-w-[150px]">
+                          <div className="flex justify-between text-[10px] font-bold">
+                            <span className="text-muted-foreground uppercase tracking-wider">{numAlunos} / {t.capacidade_maxima || 20} ALUNOS</span>
+                            {occupancy >= 100 && <span className="text-destructive flex items-center gap-0.5"><AlertCircle className="h-2 w-2" /> LOTADA</span>}
+                          </div>
+                          <Progress value={occupancy} className={cn("h-2 rounded-full", occupancy >= 100 ? "bg-red-100 [&>div]:bg-red-500" : "bg-muted [&>div]:bg-primary")} />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-primary/10 hover:text-primary transition-all shadow-inner bg-muted/20" onClick={() => handleEdit(t)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-destructive/10 hover:text-destructive transition-all shadow-inner bg-muted/20" onClick={() => deleteTurma(t.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

@@ -10,9 +10,14 @@ const Login = () => {
   const { login, instituicao } = useAuth();
   const navigate = useNavigate();
 
-  const handleQuickLogin = (role: 'admin' | 'educador' | 'responsavel') => {
+  const handleQuickLogin = (role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel') => {
     login(role);
-    const routes = { admin: '/admin/dashboard', educador: '/educador/turma', responsavel: '/pais/hoje' };
+    const routes: Record<string, string> = {
+      'Admin': '/admin/dashboard',
+      'Coordenador': '/admin/dashboard',
+      'Professor': '/educador/turma',
+      'Responsavel': '/pais/hoje'
+    };
     navigate(routes[role]);
   };
 
@@ -49,13 +54,13 @@ const Login = () => {
           </div>
 
           <div className="grid gap-3">
-            <Button variant="outline" className="h-12 rounded-xl gap-3 justify-start text-base" onClick={() => handleQuickLogin('admin')}>
+            <Button variant="outline" className="h-12 rounded-xl gap-3 justify-start text-base" onClick={() => handleQuickLogin('Admin')}>
               <Shield className="h-5 w-5 text-primary" /> Entrar como Admin
             </Button>
-            <Button variant="outline" className="h-12 rounded-xl gap-3 justify-start text-base" onClick={() => handleQuickLogin('educador')}>
+            <Button variant="outline" className="h-12 rounded-xl gap-3 justify-start text-base" onClick={() => handleQuickLogin('Professor')}>
               <GraduationCap className="h-5 w-5 text-primary" /> Entrar como Educador
             </Button>
-            <Button variant="outline" className="h-12 rounded-xl gap-3 justify-start text-base" onClick={() => handleQuickLogin('responsavel')}>
+            <Button variant="outline" className="h-12 rounded-xl gap-3 justify-start text-base" onClick={() => handleQuickLogin('Responsavel')}>
               <Heart className="h-5 w-5 text-primary" /> Entrar como Pai
             </Button>
           </div>

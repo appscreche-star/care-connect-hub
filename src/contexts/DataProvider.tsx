@@ -7,10 +7,12 @@ export interface Turma {
     id: string;
     nome_turma: string;
     instituicao_id: string;
-    periodo?: 'manha' | 'tarde' | 'integral';
-    horario_entrada?: string;
-    horario_saida?: string;
-    educador_id?: string;
+    periodo: 'Manhã' | 'Tarde' | 'Integral';
+    professor_id?: string | null;
+    ano_letivo?: string;
+    capacidade_maxima?: number;
+    faixa_etaria_min?: number;
+    faixa_etaria_max?: number;
 }
 
 export interface Aluno {
@@ -26,6 +28,8 @@ export interface Aluno {
     tipo_sanguineo?: string;
     saude_observacoes?: string;
     idade?: string;
+    responsaveis?: any[];
+    autorizados?: any[];
 }
 
 export interface Perfil {
@@ -40,7 +44,12 @@ export interface Perfil {
     endereco?: string;
     data_nascimento?: string;
     foto_url?: string;
-    role: 'admin' | 'educador' | 'responsavel';
+    role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel';
+    turno?: 'manha' | 'tarde' | 'integral';
+    status?: 'ativo' | 'inativo';
+    formacao_academica?: string;
+    especialidades?: string[];
+    contato_emergencia?: string;
     observacoes?: string;
 }
 
