@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useData } from '@/contexts/DataProvider';
+import { useState, useEffect } from 'react';
+import { useData, type MedicamentoAgenda, type Ocorrencia, type ControleVacina } from '@/contexts/DataProvider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,83 +11,83 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    HeartPulse,
-    Pill,
-    AlertTriangle,
-    ShieldCheck,
-    Plus,
-    Clock,
-    User,
-    Calendar as CalendarIcon,
-    Search,
-    CheckCircle2,
-    AlertCircle
+    HeartPulse, Pill, AlertTriangle, ShieldCheck, Plus, Clock, User,
+    Calendar as CalendarIcon, Search, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface RegistroSaude {
-    id: string;
-    aluno_id: string;
-    aluno_nome: string;
-    tipo: 'medicamento' | 'ocorrencia' | 'vacina';
-    titulo: string;
-    descricao: string;
-    data: string;
-    status: 'pendente' | 'concluido' | 'alerta';
-    responsavel?: string;
-    dosagem?: string;
-    horarios?: string[];
-}
-
 const Saude = () => {
-    const { alunos } = useData();
+    const {
+        alunos, medicamentos, ocorrencias, addMedicamento, addOcorrencia,
+        toggleMedicamentoAtivo, refreshSaude, refreshVacinasAluno
+    } = useData();
+
     const [activeTab, setActiveTab] = useState('medicamentos');
-
-    // Mock de dados para visualização (Será integrado ao DataProvider futuramente)
-    const [registros, setRegistros] = useState<RegistroSaude[]>([
-        {
-            id: '1',
-            aluno_id: '1',
-            aluno_nome: 'João Silva',
-            tipo: 'medicamento',
-            titulo: 'Amoxicilina',
-            descricao: 'Dar 5ml após o almoço',
-            data: new Date().toISOString(),
-            status: 'pendente',
-            dosagem: '5ml',
-            horarios: ['12:30']
-        },
-        {
-            id: '2',
-            aluno_id: '2',
-            aluno_nome: 'Maria Oliveira',
-            tipo: 'ocorrencia',
-            titulo: 'Febre súbita',
-            descricao: 'Apresentou 38.5°C às 10h. Comunicado aos pais.',
-            data: new Date().toISOString(),
-            status: 'alerta',
-            responsavel: 'Prof. Ana'
-        },
-        {
-            id: '3',
-            aluno_id: '3',
-            aluno_nome: 'Pedro Santos',
-            tipo: 'vacina',
-            titulo: 'Gripe (Anual)',
-            descricao: 'Campanha de vacinação escolar',
-            data: '2026-05-20T10:00:00Z',
-            status: 'pendente'
-        }
-    ]);
-
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [loadingMed, setLoadingMed] = useState<string | null>(null);
 
-    const filteredRegistros = registros.filter(r =>
-        r.aluno_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Form states
+    const [tipoRegistro, setTipoRegistro] = useState<'medicamento' | 'ocorrencia'>('medicamento');
+    const [selectedAlunoId, setSelectedAlunoId] = useState('');
+    const [titulo, setTitulo] = useState('');
+    const [descricao, setDescricao] = useState('');
+    const [dosagem, setDosagem] = useState('');
+    const [horario, setHorario] = useState('12:00');
+
+    // Vaccination state per filter
+    const [vacinasFiltro, setVacinasFiltro] = useState<ControleVacina[]>([]);
+
+    const filteredMeds = medicamentos.filter(m => {
+        const aluno = alunos.find(a => a.id === m.aluno_id);
+        return aluno?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.nome_medicamento.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    const filteredOcs = ocorrencias.filter(o => {
+        const aluno = alunos.find(a => a.id === o.aluno_id);
+        return aluno?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            o.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    const handleConfirm = async () => {
+        if (!selectedAlunoId || !titulo) return;
+
+        if (tipoRegistro === 'medicamento') {
+            await addMedicamento({
+                aluno_id: selectedAlunoId,
+                nome_medicamento: titulo,
+                dosagem,
+                horarios: [horario],
+                instrucoes: descricao,
+                ativo: true
+            });
+        } else {
+            await addOcorrencia({
+                aluno_id: selectedAlunoId,
+                titulo,
+                descricao,
+                notificado_pais: false
+            });
+        }
+        setIsDialogOpen(false);
+        resetForm();
+    };
+
+    const resetForm = () => {
+        setTitulo('');
+        setDescricao('');
+        setDosagem('');
+        setSelectedAlunoId('');
+    };
+
+    const handleToggleMed = async (id: string, current: boolean) => {
+        setLoadingMed(id);
+        await toggleMedicamentoAtivo(id, !current);
+        setLoadingMed(null);
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -110,7 +110,7 @@ const Saude = () => {
                         />
                     </div>
 
-                    <Dialog>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button className="rounded-2xl h-11 px-6 shadow-lg shadow-primary/20 gap-2">
                                 <Plus className="h-4 w-4" /> Novo Registro
@@ -123,21 +123,20 @@ const Saude = () => {
                             <div className="space-y-4 pt-4">
                                 <div className="space-y-2">
                                     <Label>Tipo de Registro</Label>
-                                    <Select defaultValue="medicamento">
+                                    <Select value={tipoRegistro} onValueChange={(v: any) => setTipoRegistro(v)}>
                                         <SelectTrigger className="rounded-xl h-12">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-xl">
                                             <SelectItem value="medicamento">💊 Agendar Medicamento</SelectItem>
                                             <SelectItem value="ocorrencia">⚠️ Relatar Ocorrência</SelectItem>
-                                            <SelectItem value="vacina">💉 Controle de Vacina</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label>Aluno</Label>
-                                    <Select>
+                                    <Select value={selectedAlunoId} onValueChange={setSelectedAlunoId}>
                                         <SelectTrigger className="rounded-xl h-12">
                                             <SelectValue placeholder="Selecione o aluno..." />
                                         </SelectTrigger>
@@ -150,16 +149,43 @@ const Saude = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Título / Assunto</Label>
-                                    <Input className="rounded-xl h-12" placeholder="Ex: Paracetamol 500mg" />
+                                    <Label>{tipoRegistro === 'medicamento' ? 'Nome do Medicamento' : 'Título da Ocorrência'}</Label>
+                                    <Input
+                                        className="rounded-xl h-12"
+                                        placeholder={tipoRegistro === 'medicamento' ? "Ex: Paracetamol" : "Ex: Febre alta"}
+                                        value={titulo}
+                                        onChange={e => setTitulo(e.target.value)}
+                                    />
                                 </div>
+
+                                {tipoRegistro === 'medicamento' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Dosagem</Label>
+                                            <Input className="rounded-xl h-12" placeholder="Ex: 5ml" value={dosagem} onChange={e => setDosagem(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Horário</Label>
+                                            <Input type="time" className="rounded-xl h-12" value={horario} onChange={e => setHorario(e.target.value)} />
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
-                                    <Label>Descrição Detalhada / Instruções</Label>
-                                    <Textarea className="rounded-xl min-h-[100px]" placeholder="Instruções de uso ou detalhes da ocorrência..." />
+                                    <Label>Descrição / Instruções</Label>
+                                    <Textarea
+                                        className="rounded-xl min-h-[100px]"
+                                        placeholder="Detalhes importantes..."
+                                        value={descricao}
+                                        onChange={e => setDescricao(e.target.value)}
+                                    />
                                 </div>
 
-                                <Button className="w-full rounded-2xl h-14 text-lg font-bold shadow-xl shadow-primary/25 mt-2">
+                                <Button
+                                    className="w-full rounded-2xl h-14 text-lg font-bold shadow-xl shadow-primary/25 mt-2"
+                                    onClick={handleConfirm}
+                                    disabled={!selectedAlunoId || !titulo}
+                                >
                                     Confirmar Registro
                                 </Button>
                             </div>
@@ -184,42 +210,64 @@ const Saude = () => {
                 <div className="mt-8">
                     <TabsContent value="medicamentos">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {filteredRegistros.filter(r => r.tipo === 'medicamento').map(r => (
-                                <Card key={r.id} className="rounded-3xl border-none shadow-sm hover:shadow-xl transition-all group overflow-hidden bg-card">
-                                    <div className="h-2 bg-primary/20 w-full" />
-                                    <CardHeader className="pb-3">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none rounded-lg px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider">
-                                                Próxima Dose
-                                            </Badge>
-                                            <button className="text-muted-foreground hover:text-primary transition-colors">
-                                                <CheckCircle2 className="h-6 w-6" />
-                                            </button>
-                                        </div>
-                                        <CardTitle className="text-xl font-bold">{r.titulo}</CardTitle>
-                                        <CardDescription className="flex items-center gap-1 font-medium">
-                                            <User className="h-3 w-3" /> {r.aluno_nome}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="bg-muted/30 p-4 rounded-2xl space-y-2">
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <Clock className="h-4 w-4 text-primary" />
-                                                <span className="font-bold">{r.horarios?.[0] || '--:--'}</span>
+                            {filteredMeds.length === 0 && (
+                                <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-3xl border-2 border-dashed">
+                                    Nenhum medicamento agendado.
+                                </div>
+                            )}
+                            {filteredMeds.map(m => {
+                                const aluno = alunos.find(a => a.id === m.aluno_id);
+                                return (
+                                    <Card key={m.id} className={cn(
+                                        "rounded-3xl border-none shadow-sm hover:shadow-xl transition-all group overflow-hidden bg-card",
+                                        !m.ativo && "opacity-60"
+                                    )}>
+                                        <div className={cn("h-2 w-full", m.ativo ? "bg-primary/20" : "bg-muted")} />
+                                        <CardHeader className="pb-3">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <Badge variant="secondary" className={cn(
+                                                    "border-none rounded-lg px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider",
+                                                    m.ativo ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                                                )}>
+                                                    {m.ativo ? 'Em Curso' : 'Pausado'}
+                                                </Badge>
+                                                <button
+                                                    className={cn("transition-colors", m.ativo ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-primary")}
+                                                    onClick={() => handleToggleMed(m.id, m.ativo)}
+                                                    disabled={loadingMed === m.id}
+                                                >
+                                                    {loadingMed === m.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <CheckCircle2 className="h-6 w-6" />}
+                                                </button>
                                             </div>
-                                            <p className="text-sm text-muted-foreground leading-relaxed">{r.descricao}</p>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-2">
-                                            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase">
-                                                <CalendarIcon className="h-3 w-3" /> Hoje
+                                            <CardTitle className="text-xl font-bold">{m.nome_medicamento}</CardTitle>
+                                            <CardDescription className="flex items-center gap-1 font-medium">
+                                                <User className="h-3 w-3" /> {aluno?.nome || 'Aluno Excluído'}
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="bg-muted/30 p-4 rounded-2xl space-y-2">
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Clock className="h-4 w-4 text-primary" />
+                                                    <span className="font-bold">{m.horarios?.[0] || '--:--'}</span>
+                                                    {m.dosagem && <span className="text-muted-foreground">• {m.dosagem}</span>}
+                                                </div>
+                                                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{m.instrucoes}</p>
                                             </div>
-                                            <Badge className="bg-emerald-500/10 text-emerald-600 border-none rounded-md px-2 py-0.5 text-[10px] font-bold">
-                                                AGENDADO
-                                            </Badge>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                            <div className="flex items-center justify-between pt-2">
+                                                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase">
+                                                    <CalendarIcon className="h-3 w-3" /> Hoje
+                                                </div>
+                                                <Badge className={cn(
+                                                    "border-none rounded-md px-2 py-0.5 text-[10px] font-bold",
+                                                    m.ativo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+                                                )}>
+                                                    {m.ativo ? 'ATIVO' : 'INATIVO'}
+                                                </Badge>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     </TabsContent>
 
@@ -233,35 +281,37 @@ const Saude = () => {
                                             <TableHead className="py-5 font-bold">Ocorrência</TableHead>
                                             <TableHead className="py-5 font-bold text-center">Status</TableHead>
                                             <TableHead className="py-5 font-bold">Data/Hora</TableHead>
-                                            <TableHead className="py-5 font-bold text-right pr-8">Ações</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredRegistros.filter(r => r.tipo === 'ocorrencia').map(r => (
-                                            <TableRow key={r.id} className="hover:bg-muted/20 transition-all border-b border-muted/20 last:border-0">
-                                                <TableCell className="pl-8 py-4 font-bold">{r.aluno_nome}</TableCell>
-                                                <TableCell className="py-4">
-                                                    <div className="max-w-md">
-                                                        <p className="font-bold text-foreground">{r.titulo}</p>
-                                                        <p className="text-xs text-muted-foreground truncate">{r.descricao}</p>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-center py-4">
-                                                    <Badge className={cn(
-                                                        "rounded-lg border-none px-3 py-1 font-bold text-[10px] uppercase",
-                                                        r.status === 'alerta' ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600"
-                                                    )}>
-                                                        {r.status === 'alerta' ? 'Crítico' : 'Resolvido'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="py-4 text-xs font-medium text-muted-foreground">
-                                                    {format(new Date(r.data), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                                                </TableCell>
-                                                <TableCell className="text-right pr-8">
-                                                    <Button variant="ghost" size="sm" className="rounded-xl h-9 hover:bg-primary/10 hover:text-primary font-bold">Ver Detalhes</Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                        {filteredOcs.length === 0 && (
+                                            <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhuma ocorrência registrada.</TableCell></TableRow>
+                                        )}
+                                        {filteredOcs.map(oc => {
+                                            const aluno = alunos.find(a => a.id === oc.aluno_id);
+                                            return (
+                                                <TableRow key={oc.id} className="hover:bg-muted/20 transition-all border-b border-muted/20 last:border-0">
+                                                    <TableCell className="pl-8 py-4 font-bold">{aluno?.nome || 'N/A'}</TableCell>
+                                                    <TableCell className="py-4">
+                                                        <div className="max-w-md">
+                                                            <p className="font-bold text-foreground">{oc.titulo}</p>
+                                                            <p className="text-xs text-muted-foreground truncate">{oc.descricao}</p>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center py-4">
+                                                        <Badge className={cn(
+                                                            "rounded-lg border-none px-3 py-1 font-bold text-[10px] uppercase",
+                                                            oc.notificado_pais ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
+                                                        )}>
+                                                            {oc.notificado_pais ? 'Pais Notificados' : 'Pendente Notif.'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="py-4 text-xs font-medium text-muted-foreground">
+                                                        {format(new Date(oc.data_hora), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -279,25 +329,40 @@ const Saude = () => {
                             </Card>
 
                             <Card className="rounded-3xl border-none shadow-sm bg-card p-6 col-span-1 md:col-span-3">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="font-bold text-xl">Próximas Campanhas</h3>
-                                    <Button variant="link" className="text-primary font-bold">Ver Calendário SUS</Button>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                                    <h3 className="font-bold text-xl">Controle por Aluno</h3>
+                                    <Select onValueChange={async (id) => {
+                                        const v = await refreshVacinasAluno(id);
+                                        setVacinasFiltro(v);
+                                    }}>
+                                        <SelectTrigger className="w-full md:w-64 rounded-xl">
+                                            <SelectValue placeholder="Ver vacinas de..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                            {alunos.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-4">
-                                    {filteredRegistros.filter(r => r.tipo === 'vacina').map(v => (
+                                    {vacinasFiltro.length === 0 && <p className="text-center py-8 text-muted-foreground">Selecione um aluno para ver o histórico.</p>}
+                                    {vacinasFiltro.map(v => (
                                         <div key={v.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center border border-muted-foreground/10 text-primary">
-                                                    <HeartPulse className="h-5 w-5" />
+                                                    <ShieldCheck className="h-5 w-5" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold">{v.titulo}</p>
-                                                    <p className="text-xs text-muted-foreground">{v.aluno_nome}</p>
+                                                    <p className="font-bold">{v.vacina_nome}</p>
+                                                    <p className="text-xs text-muted-foreground">Previsão: {v.data_prevista ? format(new Date(v.data_prevista), "dd/MM/yyyy") : 'N/A'}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-sm font-bold">{format(new Date(v.data), "dd 'de' MMMM", { locale: ptBR })}</p>
-                                                <Badge variant="outline" className="rounded-lg text-[9px] h-5 border-primary/20 text-primary font-bold">PENDENTE</Badge>
+                                                <Badge className={cn(
+                                                    "rounded-lg text-[9px] h-5 border-none font-bold",
+                                                    v.status === 'em_dia' ? "bg-emerald-500/10 text-emerald-600" : v.status === 'atrasada' ? "bg-red-500/10 text-red-600" : "bg-amber-500/10 text-amber-600"
+                                                )}>
+                                                    {v.status.toUpperCase()}
+                                                </Badge>
                                             </div>
                                         </div>
                                     ))}
@@ -317,7 +382,7 @@ const Saude = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-amber-900/70 leading-relaxed font-medium">
-                            Existem <b>3 alunos</b> com medicações pendentes para o turno da tarde.
+                            Existem <b>{medicamentos.filter(m => m.ativo).length} medicações</b> ativas sendo monitoradas hoje.
                             Certifique-se de registrar a aplicação após o procedimento.
                         </p>
                     </CardContent>
@@ -331,8 +396,8 @@ const Saude = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-primary/70 leading-relaxed font-medium">
-                            O índice de ocorrências baixou <b>15%</b> em relação à semana passada.
-                            O módulo de vacinação está 100% atualizado para o Berçário II.
+                            Foram registradas <b>{ocorrencias.length} ocorrências</b> nos últimos 7 dias.
+                            O sistema de vacinação está pronto para consulta individual por aluno.
                         </p>
                     </CardContent>
                 </Card>

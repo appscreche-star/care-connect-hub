@@ -53,6 +53,37 @@ export interface Perfil {
     observacoes?: string;
 }
 
+export interface MedicamentoAgenda {
+    id: string;
+    aluno_id: string;
+    instituicao_id: string;
+    nome_medicamento: string;
+    dosagem?: string;
+    horarios: string[];
+    instrucoes?: string;
+    ativo: boolean;
+}
+
+export interface Ocorrencia {
+    id: string;
+    aluno_id: string;
+    instituicao_id: string;
+    professor_id?: string;
+    titulo: string;
+    descricao?: string;
+    data_hora: string;
+    notificado_pais: boolean;
+}
+
+export interface ControleVacina {
+    id: string;
+    aluno_id: string;
+    vacina_nome: string;
+    status: 'em_dia' | 'pendente' | 'atrasada';
+    data_prevista?: string;
+    data_aplicacao?: string;
+}
+
 export interface RegistroDiario {
     id: string;
     aluno_id: string;
@@ -76,11 +107,15 @@ interface DataContextType {
     perfis: Perfil[];
     registros: RegistroDiario[];
     notificacoes: Notificacao[];
+    medicamentos: MedicamentoAgenda[];
+    ocorrencias: Ocorrencia[];
+    vacinas: ControleVacina[];
     loading: boolean;
     refreshTurmas: () => Promise<void>;
     refreshAlunos: () => Promise<void>;
     refreshNotificacoes: () => Promise<void>;
     refreshPerfis: () => Promise<void>;
+    refreshSaude: () => Promise<void>;
     addTurma: (turma: Partial<Turma>) => Promise<void>;
     deleteTurma: (id: string) => Promise<void>;
     updateTurma: (id: string, turma: Partial<Turma>) => Promise<void>;
@@ -93,6 +128,10 @@ interface DataContextType {
     deletePerfil: (id: string) => Promise<void>;
     addRegistro: (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro'>) => Promise<void>;
     fetchRegistrosAluno: (alunoId: string) => Promise<void>;
+    addMedicamento: (med: Omit<MedicamentoAgenda, 'id' | 'instituicao_id'>) => Promise<void>;
+    addOcorrencia: (oc: Omit<Ocorrencia, 'id' | 'instituicao_id' | 'data_hora'>) => Promise<void>;
+    toggleMedicamentoAtivo: (id: string, ativo: boolean) => Promise<void>;
+    refreshVacinasAluno: (alunoId: string) => Promise<ControleVacina[]>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -110,6 +149,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [perfis, setPerfis] = useState<Perfil[]>([]);
     const [registros, setRegistros] = useState<RegistroDiario[]>([]);
     const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+    const [medicamentos, setMedicamentos] = useState<MedicamentoAgenda[]>([]);
+    const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>([]);
+    const [vacinas, setVacinas] = useState<ControleVacina[]>([]);
     const [loading, setLoading] = useState(true);
 
     const sanitizePayload = <T extends Record<string, any>>(payload: T): T => {
@@ -180,6 +222,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
             setPerfis(data || []);
         }
+    }, [instituicao?.id]);
+
+    const refreshSaude = useCallback(async () => {
+        if (!instituicao?.id) return;
+
+        const [medsRes, ocsRes] = await Promise.all([
+            supabase.from('agenda_medicamentos').select('*').eq('instituicao_id', instituicao.id),
+            supabase.from('ocorrencias').select('*').eq('instituicao_id', instituicao.id).order('data_hora', { ascending: false })
+        ]);
+
+        if (medsRes.error) console.error('Error fetching medicamentos:', medsRes.error);
+        else setMedicamentos(medsRes.data || []);
+
+        if (ocsRes.error) console.error('Error fetching ocorrencias:', ocsRes.error);
+        else setOcorrencias(ocsRes.data || []);
     }, [instituicao?.id]);
 
     const addTurma = async (turma: Partial<Turma>) => {
@@ -326,6 +383,41 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const addMedicamento = async (med: Omit<MedicamentoAgenda, 'id' | 'instituicao_id'>) => {
+        if (!instituicao?.id) return;
+        const { error } = await supabase.from('agenda_medicamentos').insert([{ ...med, instituicao_id: instituicao.id }]);
+        if (error) toast({ title: '❌ Erro ao agendar medicamento', description: error.message, variant: 'destructive' });
+        else {
+            toast({ title: '✅ Medicamento agendado!' });
+            refreshSaude();
+        }
+    };
+
+    const addOcorrencia = async (oc: Omit<Ocorrencia, 'id' | 'instituicao_id' | 'data_hora'>) => {
+        if (!instituicao?.id) return;
+        const { error } = await supabase.from('ocorrencias').insert([{ ...oc, instituicao_id: instituicao.id, professor_id: user?.id }]);
+        if (error) toast({ title: '❌ Erro ao registrar ocorrência', description: error.message, variant: 'destructive' });
+        else {
+            toast({ title: '✅ Ocorrência registrada!' });
+            refreshSaude();
+        }
+    };
+
+    const toggleMedicamentoAtivo = async (id: string, ativo: boolean) => {
+        const { error } = await supabase.from('agenda_medicamentos').update({ ativo }).eq('id', id);
+        if (error) toast({ title: '❌ Erro ao atualizar status', description: error.message, variant: 'destructive' });
+        else refreshSaude();
+    };
+
+    const refreshVacinasAluno = async (alunoId: string) => {
+        const { data, error } = await supabase.from('controle_vacinas').select('*').eq('aluno_id', alunoId);
+        if (error) {
+            console.error('Error fetching vacinas:', error);
+            return [];
+        }
+        return data || [];
+    };
+
     useEffect(() => {
         const init = async () => {
             setLoading(true);
@@ -333,19 +425,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await refreshNotificacoes();
             await refreshPerfis();
             await refreshAlunos();
+            await refreshSaude();
             setLoading(false);
         };
         init();
-    }, [refreshTurmas, refreshNotificacoes, refreshPerfis, refreshAlunos]);
+    }, [refreshTurmas, refreshNotificacoes, refreshPerfis, refreshAlunos, refreshSaude]);
 
     return (
         <DataContext.Provider value={{
-            turmas, alunos, perfis, registros, notificacoes, loading,
-            refreshTurmas, refreshAlunos, refreshNotificacoes, refreshPerfis,
+            turmas, alunos, perfis, registros, notificacoes, medicamentos, ocorrencias, vacinas, loading,
+            refreshTurmas, refreshAlunos, refreshNotificacoes, refreshPerfis, refreshSaude,
             addTurma, deleteTurma, updateTurma,
             addAluno, updateAluno, deleteAluno, vincularAlunoTurma,
             addPerfil, updatePerfil, deletePerfil,
-            addRegistro, fetchRegistrosAluno
+            addRegistro, fetchRegistrosAluno,
+            addMedicamento, addOcorrencia, toggleMedicamentoAtivo, refreshVacinasAluno
         }}>
             {children}
         </DataContext.Provider>
