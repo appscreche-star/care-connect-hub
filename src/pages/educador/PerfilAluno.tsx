@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock, DoorOpen, Package } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
+import ActionMenu from '@/components/ActionMenu';
 
 const moods = [
   { label: 'Feliz', icon: Smile, emoji: '😊' },
@@ -266,39 +267,12 @@ const PerfilAluno = () => {
         </div>
       </div>
 
-      {/* Action Menu Grid */}
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-11 animate-in fade-in duration-700">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1.5 p-2 rounded-2xl transition-all border-2",
-                isActive
-                  ? cn("border-primary/40 shadow-lg shadow-primary/5 scale-105", item.bg)
-                  : "border-transparent bg-card/40 hover:bg-card hover:border-muted-foreground/10"
-              )}
-            >
-              <div className={cn(
-                "h-10 w-10 rounded-xl flex items-center justify-center transition-transform",
-                item.color,
-                isActive ? "scale-110" : ""
-              )}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-wider text-center line-clamp-1",
-                isActive ? "text-primary" : "text-muted-foreground/70"
-              )}>
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Action Menu - Modular Component with horizontal scroll on mobile */}
+      <ActionMenu
+        items={menuItems}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       {/* Alertas de Saúde */}
       {(aluno.alergias || aluno.saude_observacoes || aluno.restricoes_alimentares || aluno.medicamentos_uso_continuo || aluno.tipo_sanguineo) && (

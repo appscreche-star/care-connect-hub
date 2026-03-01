@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Loader2, Trash2, ShieldAlert, Heart, Users, ShieldCheck, UserPlus, Camera } from 'lucide-react';
+import { Plus, Pencil, Loader2, Trash2, ShieldAlert, Heart, Users, ShieldCheck, UserPlus, Camera, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Alunos = () => {
   const { alunos, turmas, loading, addAluno, updateAluno, deleteAluno, vincularAlunoTurma } = useData();
@@ -334,6 +335,11 @@ const Alunos = () => {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-emerald-50 hover:text-emerald-600 transition-all active:scale-90" asChild>
+                          <Link to={`/admin/aluno/${a.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-primary/10 hover:text-primary transition-all active:scale-90" onClick={() => handleEdit(a)}>
                           <Pencil className="h-4 w-4" />
                         </Button>

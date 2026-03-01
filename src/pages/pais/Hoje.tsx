@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardCard from '@/components/DashboardCard';
 import { CelebrationOverlay } from '@/components/CelebrationOverlay';
 import { Badge } from '@/components/ui/badge';
+import ActionMenu, { type MenuItem } from '@/components/ActionMenu';
+import { Thermometer, Droplets, Package } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   presenca: DoorOpen,
@@ -38,6 +40,21 @@ const Hoje = () => {
   const { user } = useAuth();
   const { alunos, registros, fetchRegistrosAluno, loading, addRegistro, ocorrencias, refreshSaude, selectedAlunoId } = useData();
   const [celebration, setCelebration] = useState<{ open: boolean; titulo?: string; legenda?: string }>({ open: false });
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+
+  const menuItems: MenuItem[] = [
+    { id: 'presenca', label: 'Presença', icon: DoorOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'saude', label: 'Saúde', icon: Thermometer, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { id: 'higiene', label: 'Higiene', icon: Droplets, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'bemestar', label: 'Bem-estar', icon: Smile, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'alimentacao', label: 'Refeição', icon: UtensilsCrossed, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { id: 'sono', label: 'Sono', icon: Moon, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'fralda', label: 'Fralda', icon: Baby, color: 'text-amber-700', bg: 'bg-amber-50' },
+    { id: 'album', label: 'Álbum', icon: Camera, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { id: 'ocorrencia', label: 'Ocorrência', icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive/5' },
+    { id: 'mochila', label: 'Mochila', icon: Package, color: 'text-slate-500', bg: 'bg-slate-50' },
+    { id: 'recados', label: 'Recados', icon: MessageSquare, color: 'text-cyan-500', bg: 'bg-cyan-50' },
+  ];
 
   useEffect(() => {
     refreshSaude();
@@ -117,6 +134,22 @@ const Hoje = () => {
         </div>
       )}
 
+      {/* Action Menu - Modular Component with horizontal scroll on mobile */}
+      <ActionMenu
+        items={menuItems}
+        activeTab={activeTab === 'timeline' ? '' : activeTab}
+        onTabChange={(id) => {
+          // For parents, we can either jump to content or filter
+          // Let's scroll to the relevant card or switch context
+          const element = document.getElementById(`card-${id}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            // If not on dashboard tab, or card not found, maybe just show toast or switch tab
+          }
+        }}
+      />
+
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid grid-cols-2 rounded-2xl h-14 p-1 bg-muted/40 mb-6">
           <TabsTrigger value="dashboard" className="rounded-xl font-bold gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
@@ -177,36 +210,43 @@ const Hoje = () => {
             </div>
           )}
 
-          {/* Quick Status Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <DashboardCard
-              title="Alimentação"
-              value={latestAlimentacao?.detalhes?.status || 'Pendente'}
-              subtitle={latestAlimentacao ? `Às ${latestAlimentacao.hora_registro}` : 'Aguardando registro'}
-              icon={Apple}
-              color="orange"
-            />
-            <DashboardCard
-              title="Soneca"
-              value={latestSono?.detalhes?.status === 'dormindo' ? 'Dormindo' : 'Acordado'}
-              subtitle={latestSono ? `Desde ${latestSono.hora_registro}` : 'Não iniciou'}
-              icon={Moon}
-              color="purple"
-            />
-            <DashboardCard
-              title="Higiene"
-              value={latestFralda?.detalhes?.status || 'Ok'}
-              subtitle={latestFralda ? `Troca às ${latestFralda.hora_registro}` : 'Nenhuma troca'}
-              icon={Baby}
-              color="blue"
-            />
-            <DashboardCard
-              title="Humor"
-              value={timelineData.find(r => r.tipo_registro === 'bemestar')?.detalhes?.humor || 'Bem'}
-              subtitle="Atualizado agora"
-              icon={Smile}
-              color="green"
-            />
+            <div id="card-alimentacao">
+              <DashboardCard
+                title="Alimentação"
+                value={latestAlimentacao?.detalhes?.status || 'Pendente'}
+                subtitle={latestAlimentacao ? `Às ${latestAlimentacao.hora_registro}` : 'Aguardando registro'}
+                icon={Apple}
+                color="orange"
+              />
+            </div>
+            <div id="card-sono">
+              <DashboardCard
+                title="Soneca"
+                value={latestSono?.detalhes?.status === 'dormindo' ? 'Dormindo' : 'Acordado'}
+                subtitle={latestSono ? `Desde ${latestSono.hora_registro}` : 'Não iniciou'}
+                icon={Moon}
+                color="purple"
+              />
+            </div>
+            <div id="card-fralda">
+              <DashboardCard
+                title="Higiene"
+                value={latestFralda?.detalhes?.status || 'Ok'}
+                subtitle={latestFralda ? `Troca às ${latestFralda.hora_registro}` : 'Nenhuma troca'}
+                icon={Baby}
+                color="blue"
+              />
+            </div>
+            <div id="card-bemestar">
+              <DashboardCard
+                title="Humor"
+                value={timelineData.find(r => r.tipo_registro === 'bemestar')?.detalhes?.humor || 'Bem'}
+                subtitle="Atualizado agora"
+                icon={Smile}
+                color="green"
+              />
+            </div>
           </div>
         </TabsContent>
 
