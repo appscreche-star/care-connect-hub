@@ -12,7 +12,7 @@ const HomeEducador = () => {
 
     // Filter turmas where this educator is the professor
     // For admin/demo, we might show more, but for educator flow it should be specific
-    const minhasTurmas = turmas.filter(t => t.professor_id === user?.id || !t.professor_id);
+    const minhasTurmas = turmas.filter(t => t.professor_id === user?.id);
 
     if (loading) {
         return (

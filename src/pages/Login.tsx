@@ -1,17 +1,41 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Shield, GraduationCap, Heart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const { login, instituicao } = useAuth();
+  const { perfis } = useData();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const roleMap: Record<string, string> = {
+    'Admin': 'Admin',
+    'Coordenador': 'Coordenador',
+    'Professor': 'Professor',
+    'Responsavel': 'Responsavel',
+  };
 
   const handleQuickLogin = (role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel') => {
-    login(role);
+    const perfil = perfis.find(p => p.role === role);
+
+    if (perfil) {
+      login(role, { id: perfil.id, nome: perfil.nome, email: perfil.email });
+    } else {
+      // Fallback: login genérico se não houver perfil cadastrado
+      toast({
+        title: 'Nenhum perfil encontrado',
+        description: `Não há ${role} cadastrado. Usando acesso genérico.`,
+        variant: 'destructive',
+      });
+      login(role);
+    }
+
     const routes: Record<string, string> = {
       'Admin': '/admin/dashboard',
       'Coordenador': '/admin/dashboard',

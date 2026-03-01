@@ -6,7 +6,7 @@ interface AuthContextType {
   user: Usuario | null;
   instituicao: Instituicao;
   isOnline: boolean;
-  login: (role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel') => void;
+  login: (role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel', userData?: { id: string; nome: string; email?: string }) => void;
   logout: () => void;
   toggleOnline: () => void;
   setPrimaryColor: (hsl: string) => void;
@@ -54,13 +54,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchInstituicao().finally(() => setLoading(false));
   }, [fetchInstituicao]);
 
-  const login = useCallback((role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel') => {
-    // For now, allow quick login with a dummy user if Supabase Auth is not used
+  const login = useCallback((role: 'Admin' | 'Coordenador' | 'Professor' | 'Responsavel', userData?: { id: string; nome: string; email?: string }) => {
     setUser({
-      id: role === 'Admin' ? '1' : '2',
+      id: userData?.id || (role === 'Admin' ? '1' : '2'),
       role,
-      nome: role,
-      email: `${role.toLowerCase()}@creche.com`,
+      nome: userData?.nome || role,
+      email: userData?.email || `${role.toLowerCase()}@creche.com`,
       instituicao_id: inst.id || DEFAULT_INST.id
     });
   }, [inst.id]);
