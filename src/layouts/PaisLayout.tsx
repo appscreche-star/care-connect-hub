@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataProvider';
 import NotificationSheet from '@/components/NotificationSheet';
 import OnlineStatus from '@/components/OnlineStatus';
 import { CalendarDays, Camera, Package, Clock, LogOut } from 'lucide-react';
@@ -15,11 +16,19 @@ const tabs = [
 
 const PaisLayout = () => {
   const { user, logout } = useAuth();
+  const { alunos, selectedAlunoId, setSelectedAlunoId, registros } = useData();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const selectedAluno = alunos.find(a => a.id === selectedAlunoId);
+  const humorAtual = registros.find(r => r.aluno_id === selectedAlunoId && r.tipo_registro === 'bemestar')?.detalhes;
+
   const handleEstouChegando = () => {
-    toast({ title: '✅ Aviso enviado!', description: 'A creche foi notificada que você está a caminho.' });
+    if (!selectedAlunoId) return;
+    toast({
+      title: '✅ Aviso enviado!',
+      description: `A creche foi notificada que você está a caminho para buscar ${selectedAluno?.nome.split(' ')[0] || 'o aluno'}.`
+    });
   };
 
   return (
@@ -28,12 +37,32 @@ const PaisLayout = () => {
       <header className="border-b sticky top-0 bg-background z-10">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-              J
+            <div className="h-10 w-10 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center text-lg font-bold text-primary border-2 border-primary/20">
+              {selectedAluno?.foto_url ? (
+                <img src={selectedAluno.foto_url} alt={selectedAluno.nome} className="h-full w-full object-cover" />
+              ) : (
+                selectedAluno?.nome?.[0] || '?'
+              )}
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Joãozinho</p>
-              <p className="text-xs text-muted-foreground">😊 Feliz</p>
+            <div className="flex flex-col">
+              {alunos.length > 1 ? (
+                <select
+                  className="text-sm font-bold bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-foreground appearance-none pr-4"
+                  value={selectedAlunoId || ''}
+                  onChange={(e) => setSelectedAlunoId(e.target.value)}
+                >
+                  {alunos.map(a => (
+                    <option key={a.id} value={a.id}>{a.nome.split(' ')[0]}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm font-bold text-foreground">
+                  {selectedAluno?.nome.split(' ')[0] || 'Aluno'}
+                </p>
+              )}
+              <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                {humorAtual ? `${humorAtual.emoji || '😊'} ${humorAtual.humor || 'Bem'}` : '✨ Sem atualizações'}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">

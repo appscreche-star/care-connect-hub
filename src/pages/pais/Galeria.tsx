@@ -29,11 +29,11 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 };
 
 const Galeria = () => {
-  const { registros } = useData();
+  const { registros, selectedAlunoId } = useData();
   const [celebration, setCelebration] = useState<{ open: boolean; titulo?: string; legenda?: string }>({ open: false });
 
   // Get album registros from DataProvider (real data)
-  const albumRegistros = registros.filter(r => r.tipo_registro === 'album');
+  const albumRegistros = registros.filter(r => r.tipo_registro === 'album' && r.aluno_id === selectedAlunoId);
   const albumConquistas = albumRegistros.filter(r => r.detalhes?.conquista);
   const albumDiaDia = albumRegistros.filter(r => !r.detalhes?.conquista);
 

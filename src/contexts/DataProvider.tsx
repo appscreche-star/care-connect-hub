@@ -134,6 +134,8 @@ interface DataContextType {
     toggleMedicamentoAtivo: (id: string, ativo: boolean) => Promise<void>;
     refreshVacinasAluno: (alunoId: string) => Promise<ControleVacina[]>;
     updateOcorrencia: (id: string, updates: Partial<Ocorrencia>) => Promise<void>;
+    selectedAlunoId: string | null;
+    setSelectedAlunoId: (id: string | null) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -154,6 +156,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [medicamentos, setMedicamentos] = useState<MedicamentoAgenda[]>([]);
     const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>([]);
     const [vacinas, setVacinas] = useState<ControleVacina[]>([]);
+    const [selectedAlunoId, setSelectedAlunoId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     const sanitizePayload = <T extends Record<string, any>>(payload: T): T => {
@@ -193,8 +196,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Error fetching alunos:', error);
         } else {
             setAlunos(data || []);
+            if (data && data.length > 0 && !selectedAlunoId) {
+                setSelectedAlunoId(data[0].id);
+            }
         }
-    }, [instituicao?.id]);
+    }, [instituicao?.id, selectedAlunoId]);
 
     const refreshNotificacoes = useCallback(async () => {
         if (!instituicao?.id || instituicao.id === DEFAULT_INST.id) return;
@@ -451,7 +457,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addTurma, deleteTurma, updateTurma, addAluno, updateAluno, deleteAluno,
             vincularAlunoTurma, addPerfil, updatePerfil, deletePerfil, addRegistro,
             fetchRegistrosAluno, addMedicamento, addOcorrencia, updateOcorrencia, toggleMedicamentoAtivo,
-            refreshVacinasAluno
+            refreshVacinasAluno, selectedAlunoId, setSelectedAlunoId
         }}>
             {children}
         </DataContext.Provider>

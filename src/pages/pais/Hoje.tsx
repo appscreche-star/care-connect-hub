@@ -32,7 +32,7 @@ const detailsMap: Record<string, (d: any) => string> = {
 
 const Hoje = () => {
   const { user } = useAuth();
-  const { alunos, registros, fetchRegistrosAluno, loading, addRegistro, ocorrencias, refreshSaude } = useData();
+  const { alunos, registros, fetchRegistrosAluno, loading, addRegistro, ocorrencias, refreshSaude, selectedAlunoId } = useData();
   const [targetAlunoId, setTargetAlunoId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,22 +40,16 @@ const Hoje = () => {
   }, [refreshSaude]);
 
   useEffect(() => {
-    if (alunos.length > 0 && !targetAlunoId) {
-      setTargetAlunoId(alunos[0].id);
+    if (selectedAlunoId) {
+      fetchRegistrosAluno(selectedAlunoId);
     }
-  }, [alunos, targetAlunoId]);
-
-  useEffect(() => {
-    if (targetAlunoId) {
-      fetchRegistrosAluno(targetAlunoId);
-    }
-  }, [targetAlunoId, fetchRegistrosAluno]);
+  }, [selectedAlunoId, fetchRegistrosAluno]);
 
   // Combine and sort logs
   const timelineData = [
     ...registros.map(r => ({ ...r, source: 'registro' })),
     ...ocorrencias
-      .filter(o => o.aluno_id === targetAlunoId && o.notificado_pais)
+      .filter(o => o.aluno_id === selectedAlunoId && o.notificado_pais)
       .map(o => ({
         id: o.id,
         tipo_registro: 'ocorrencia',
@@ -66,9 +60,9 @@ const Hoje = () => {
   ].sort((a, b) => b.hora_registro.localeCompare(a.hora_registro));
 
   const handleChegando = async () => {
-    if (!targetAlunoId) return;
+    if (!selectedAlunoId) return;
     await addRegistro({
-      aluno_id: targetAlunoId,
+      aluno_id: selectedAlunoId,
       tipo_registro: 'chegando',
       detalhes: { status: 'a_caminho' }
     });
@@ -77,7 +71,7 @@ const Hoje = () => {
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
-  if (!targetAlunoId || timelineData.length === 0) {
+  if (!selectedAlunoId || timelineData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
         <div className="text-6xl">🌅</div>
