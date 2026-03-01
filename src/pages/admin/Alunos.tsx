@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Loader2, Trash2, ShieldAlert, Heart, Users, ShieldCheck, UserPlus, Camera, Eye } from 'lucide-react';
+import { Plus, Pencil, Loader2, Trash2, ShieldAlert, Heart, Users, ShieldCheck, UserPlus, Camera, Eye, Key } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Alunos = () => {
@@ -77,7 +77,7 @@ const Alunos = () => {
           <DialogTrigger asChild>
             <Button className="rounded-xl gap-2"><Plus className="h-4 w-4" /> Novo Aluno</Button>
           </DialogTrigger>
-          <DialogContent className="rounded-2xl sm:max-w-2xl overflow-y-auto max-h-[90vh] p-0 border-none shadow-2xl">
+          <DialogContent className="rounded-2xl sm:max-w-2xl overflow-y-auto max-h-[90vh] p-0 border-none shadow-2xl bg-card">
             <DialogHeader className="p-6 pb-0">
               <DialogTitle className="text-xl">{editingId ? 'Editar Prontuário' : 'Cadastrar Novo Aluno'}</DialogTitle>
             </DialogHeader>
@@ -137,67 +137,106 @@ const Alunos = () => {
                       className="rounded-lg h-8"
                       onClick={() => setFormData(p => ({
                         ...p,
-                        responsaveis: [...(p.responsaveis || []), { nome: '', parentesco: '', financeiro: false }]
+                        responsaveis: [...(p.responsaveis || []), { nome: '', parentesco: '', financeiro: false, username: '', password: '' }]
                       }))}
                     >
                       <Plus className="h-3 w-3 mr-1" /> Adicionar
                     </Button>
                   </div>
-                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                     {formData.responsaveis?.map((resp, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-muted/20 p-3 rounded-xl relative group">
+                      <div key={idx} className="bg-muted/20 p-4 rounded-2xl relative group border border-transparent hover:border-primary/20 transition-all">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
                           onClick={() => setFormData(p => ({
                             ...p,
                             responsaveis: p.responsaveis?.filter((_, i) => i !== idx)
                           }))}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                        <div className="col-span-12 md:col-span-5 space-y-1">
-                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nome do Responsável</Label>
-                          <Input
-                            value={resp.nome}
-                            onChange={e => {
-                              const newResps = [...(formData.responsaveis || [])];
-                              newResps[idx] = { ...newResps[idx], nome: e.target.value };
-                              setFormData(p => ({ ...p, responsaveis: newResps }));
-                            }}
-                            placeholder="Nome completo"
-                            className="rounded-lg h-9 text-sm"
-                          />
+
+                        <div className="grid grid-cols-12 gap-3 mb-4">
+                          <div className="col-span-12 md:col-span-6 space-y-1">
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nome do Responsável</Label>
+                            <Input
+                              value={resp.nome}
+                              onChange={e => {
+                                const newResps = [...(formData.responsaveis || [])];
+                                newResps[idx] = { ...newResps[idx], nome: e.target.value };
+                                setFormData(p => ({ ...p, responsaveis: newResps }));
+                              }}
+                              placeholder="Nome completo"
+                              className="rounded-xl h-10 text-sm"
+                            />
+                          </div>
+                          <div className="col-span-6 md:col-span-3 space-y-1">
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Vínculo</Label>
+                            <Input
+                              value={resp.parentesco}
+                              onChange={e => {
+                                const newResps = [...(formData.responsaveis || [])];
+                                newResps[idx] = { ...newResps[idx], parentesco: e.target.value };
+                                setFormData(p => ({ ...p, responsaveis: newResps }));
+                              }}
+                              placeholder="Mãe, Pai..."
+                              className="rounded-xl h-10 text-sm"
+                            />
+                          </div>
+                          <div className="col-span-6 md:col-span-3 flex items-center gap-2 h-10 mt-auto border rounded-xl px-3 bg-background/50">
+                            <input
+                              type="checkbox"
+                              className="rounded border-primary h-4 w-4"
+                              id={`financeiro-${idx}`}
+                              checked={resp.financeiro}
+                              onChange={e => {
+                                const newResps = (formData.responsaveis || []).map((r, i) => ({
+                                  ...r,
+                                  financeiro: i === idx ? e.target.checked : r.financeiro
+                                }));
+                                setFormData(p => ({ ...p, responsaveis: newResps }));
+                              }}
+                            />
+                            <label htmlFor={`financeiro-${idx}`} className="text-xs font-bold cursor-pointer select-none">Financeiro</label>
+                          </div>
                         </div>
-                        <div className="col-span-6 md:col-span-3 space-y-1">
-                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Vínculo</Label>
-                          <Input
-                            value={resp.parentesco}
-                            onChange={e => {
-                              const newResps = [...(formData.responsaveis || [])];
-                              newResps[idx] = { ...newResps[idx], parentesco: e.target.value };
-                              setFormData(p => ({ ...p, responsaveis: newResps }));
-                            }}
-                            placeholder="Mãe, Pai, Avó..."
-                            className="rounded-lg h-9 text-sm"
-                          />
-                        </div>
-                        <div className="col-span-6 md:col-span-4 flex items-center gap-2 h-9 border rounded-lg px-2 bg-background">
-                          <input
-                            type="checkbox"
-                            className="rounded border-primary h-3.5 w-3.5"
-                            id={`financeiro-${idx}`}
-                            checked={resp.financeiro}
-                            onChange={e => {
-                              const newResps = (formData.responsaveis || []).map((r, i) => ({
-                                ...r,
-                                financeiro: i === idx ? e.target.checked : r.financeiro
-                              }));
-                              setFormData(p => ({ ...p, responsaveis: newResps }));
-                            }}
-                          />
-                          <label htmlFor={`financeiro-${idx}`} className="text-xs font-semibold cursor-pointer select-none">Financeiro</label>
+
+                        <div className="bg-background/40 p-3 rounded-xl border border-muted-foreground/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Key className="h-3 w-3 text-primary" />
+                            <span className="text-[9px] font-black uppercase text-foreground/70 tracking-wider">Acesso ao Aplicativo</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Usuário</Label>
+                              <Input
+                                value={resp.username || ''}
+                                onChange={e => {
+                                  const newResps = [...(formData.responsaveis || [])];
+                                  newResps[idx] = { ...newResps[idx], username: e.target.value };
+                                  setFormData(p => ({ ...p, responsaveis: newResps }));
+                                }}
+                                placeholder="Login"
+                                className="rounded-lg h-8 text-xs bg-background"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Senha</Label>
+                              <Input
+                                type="password"
+                                value={resp.password || ''}
+                                onChange={e => {
+                                  const newResps = [...(formData.responsaveis || [])];
+                                  newResps[idx] = { ...newResps[idx], password: e.target.value };
+                                  setFormData(p => ({ ...p, responsaveis: newResps }));
+                                }}
+                                placeholder="Senha"
+                                className="rounded-lg h-8 text-xs bg-background"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

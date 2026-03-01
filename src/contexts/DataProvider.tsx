@@ -153,6 +153,7 @@ interface DataContextType {
     toggleMedicamentoAtivo: (id: string, ativo: boolean) => Promise<void>;
     refreshVacinasAluno: (alunoId: string) => Promise<ControleVacina[]>;
     updateOcorrencia: (id: string, updates: Partial<Ocorrencia>) => Promise<void>;
+    vincularResponsavelAluno: (perfilId: string, alunoId: string) => Promise<void>;
     selectedAlunoId: string | null;
     setSelectedAlunoId: (id: string | null) => void;
 }
@@ -319,27 +320,89 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const addAluno = async (aluno: Omit<Aluno, 'id'>) => {
         if (!instituicao?.id) return;
-        const sanitized = sanitizePayload(aluno);
-        const { error } = await supabase
+        const { responsaveis, ...rest } = aluno;
+        const sanitized = sanitizePayload(rest);
+
+        const { data, error } = await supabase
             .from('alunos')
-            .insert([{ ...sanitized, instituicao_id: instituicao.id }]);
+            .insert([{ ...sanitized, instituicao_id: instituicao.id }])
+            .select()
+            .single();
 
         if (error) {
             toast({ title: '❌ Erro ao cadastrar aluno', description: error.message, variant: 'destructive' });
-        } else {
+        } else if (data) {
+            // Se houver responsáveis com credenciais, cria os perfis
+            if (responsaveis && responsaveis.length > 0) {
+                for (const resp of responsaveis) {
+                    if (resp.username && resp.password) {
+                        try {
+                            const { data: perfilData, error: pError } = await supabase
+                                .from('perfis')
+                                .insert([{
+                                    nome: resp.nome,
+                                    username: resp.username,
+                                    password: resp.password,
+                                    role: 'Responsavel',
+                                    instituicao_id: instituicao.id
+                                }])
+                                .select()
+                                .single();
+
+                            if (!pError && perfilData) {
+                                // Aqui poderíamos salvar o vínculo numa tabela de junção se existisse
+                                // Por enquanto, vamos atualizar o array de responsáveis com o ID do perfil
+                                resp.perfil_id = perfilData.id;
+                            }
+                        } catch (e) {
+                            console.error('Erro ao criar perfil de responsável:', e);
+                        }
+                    }
+                }
+                // Atualiza o aluno com os IDs dos perfis no JSONB (se suportado)
+                await supabase.from('alunos').update({ responsaveis }).eq('id', data.id);
+            }
+
             toast({ title: '✅ Aluno cadastrado!' });
             refreshAlunos();
+            refreshPerfis();
         }
     };
 
     const updateAluno = async (id: string, aluno: Partial<Aluno>) => {
-        const sanitized = sanitizePayload(aluno);
-        const { error } = await supabase.from('alunos').update(sanitized).eq('id', id);
+        const { responsaveis, ...rest } = aluno;
+        const sanitized = sanitizePayload(rest);
+
+        // Se houver responsáveis novos com credenciais, cria os perfis
+        if (responsaveis && responsaveis.length > 0 && instituicao?.id) {
+            for (const resp of (responsaveis as any[])) {
+                if (resp.username && resp.password && !resp.perfil_id) {
+                    const { data: perfilData, error: pError } = await supabase
+                        .from('perfis')
+                        .insert([{
+                            nome: resp.nome,
+                            username: resp.username,
+                            password: resp.password,
+                            role: 'Responsavel',
+                            instituicao_id: instituicao.id
+                        }])
+                        .select()
+                        .single();
+
+                    if (!pError && perfilData) {
+                        resp.perfil_id = perfilData.id;
+                    }
+                }
+            }
+        }
+
+        const { error } = await supabase.from('alunos').update({ ...sanitized, responsaveis }).eq('id', id);
         if (error) {
             toast({ title: '❌ Erro ao atualizar aluno', description: error.message, variant: 'destructive' });
         } else {
             toast({ title: '✅ Aluno atualizado!' });
             refreshAlunos();
+            refreshPerfis();
         }
     };
 
@@ -396,6 +459,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
             toast({ title: '✅ Perfil excluído!' });
             refreshPerfis();
+        }
+    };
+
+    const vincularResponsavelAluno = async (perfilId: string, alunoId: string) => {
+        const aluno = alunos.find(a => a.id === alunoId);
+        const perfil = perfis.find(p => p.id === perfilId);
+
+        if (!aluno || !perfil) return;
+
+        const responsaveis = [...(aluno.responsaveis || [])];
+        const jaVinculado = responsaveis.some(r => r.perfil_id === perfilId);
+
+        if (jaVinculado) {
+            toast({ title: 'ℹ️ Já vinculado', description: 'Este responsável já está vinculado ao aluno.' });
+            return;
+        }
+
+        responsaveis.push({
+            nome: perfil.nome,
+            perfil_id: perfilId,
+            parentesco: 'Responsável',
+            financeiro: false
+        });
+
+        const { error } = await supabase.from('alunos').update({ responsaveis }).eq('id', alunoId);
+
+        if (error) {
+            toast({ title: '❌ Erro ao vincular', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: '✅ Vínculo estabelecido!' });
+            refreshAlunos();
         }
     };
 
@@ -529,6 +623,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             vincularAlunoTurma, addPerfil, updatePerfil, deletePerfil, addRegistro,
             fetchRegistrosAluno, addMedicamento, addOcorrencia, updateOcorrencia, toggleMedicamentoAtivo,
             refreshVacinasAluno, selectedAlunoId, setSelectedAlunoId,
+            vincularResponsavelAluno,
             eventos, refreshEventos, addEvento, updateEvento, deleteEvento
         }}>
             {children}

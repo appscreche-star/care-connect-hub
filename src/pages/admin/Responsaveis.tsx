@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { useData, type Perfil } from '@/contexts/DataProvider';
-import { Users, Plus, Search, Mail, Phone, Key, ShieldCheck, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Users, Plus, Search, Mail, Phone, Key, ShieldCheck, Pencil, Trash2, Check, X, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const Responsaveis = () => {
-    const { perfis, addPerfil, updatePerfil, deletePerfil } = useData();
-    const responsaveis = perfis.filter(p => p.role === 'Responsavel');
+    const { perfis, alunos, addPerfil, updatePerfil, deletePerfil, vincularResponsavelAluno } = useData();
+    const responsaveisProfiles = perfis.filter(p => p.role === 'Responsavel');
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingPerfil, setEditingPerfil] = useState<Perfil | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedAlunoId, setSelectedAlunoId] = useState<string>('');
 
     const [formData, setFormData] = useState<Partial<Perfil>>({
         nome: '',
@@ -43,12 +44,12 @@ const Responsaveis = () => {
                 role: 'Responsavel'
             });
         }
+        setSelectedAlunoId('');
         setIsDialogOpen(true);
     };
 
     const handleSubmit = async () => {
         if (!formData.nome || !formData.username) return;
-
         if (editingPerfil) {
             await updatePerfil(editingPerfil.id, formData);
         } else {
@@ -57,7 +58,7 @@ const Responsaveis = () => {
         setIsDialogOpen(false);
     };
 
-    const filteredResponsaveis = responsaveis.filter(p =>
+    const filteredResponsaveis = responsaveisProfiles.filter(p =>
         p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.username?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -96,16 +97,15 @@ const Responsaveis = () => {
                             <TableRow className="hover:bg-transparent border-muted-foreground/5 bg-muted/10">
                                 <TableHead className="font-black text-[10px] uppercase tracking-widest pl-8 py-4">Responsável</TableHead>
                                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-center">Acesso (Login)</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest">Contatos</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest">Status</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-center">Alunos Vinculados</TableHead>
                                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-right pr-8">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredResponsaveis.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic font-medium">
-                                        Nenhum responsável encontrado para esta busca.
+                                    <TableCell colSpan={4} className="h-48 text-center text-muted-foreground italic font-medium">
+                                        Nenhum responsável encontrado.
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -118,7 +118,9 @@ const Responsaveis = () => {
                                                 </div>
                                                 <div>
                                                     <p className="font-black text-foreground group-hover:text-primary transition-colors">{p.nome}</p>
-                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{p.cpf || 'Cpf não informado'}</p>
+                                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold italic tracking-tight">
+                                                        <Mail className="h-3 w-3" /> {p.email || '---'}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -128,19 +130,17 @@ const Responsaveis = () => {
                                                 <span className="text-[8px] uppercase font-bold text-muted-foreground/60 mt-0.5 tracking-tighter">Login Exclusivo</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="space-y-1.5">
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold"><Mail className="h-3.5 w-3.5 text-primary/40" /> {p.email || '---'}</div>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold"><Phone className="h-3.5 w-3.5 text-primary/40" /> {p.telefone || '---'}</div>
+                                        <TableCell className="text-center">
+                                            <div className="flex flex-wrap justify-center gap-1">
+                                                {alunos.filter(a => a.responsaveis?.some(r => r.perfil_id === p.id)).map(a => (
+                                                    <Badge key={a.id} variant="secondary" className="text-[9px] px-2 py-0 h-5 bg-emerald-500/10 text-emerald-600 border-none">
+                                                        {a.nome.split(' ')[0]}
+                                                    </Badge>
+                                                ))}
+                                                {alunos.filter(a => a.responsaveis?.some(r => r.perfil_id === p.id)).length === 0 && (
+                                                    <span className="text-[10px] text-muted-foreground italic">Sem vínculos</span>
+                                                )}
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={cn(
-                                                "rounded-lg px-2 py-0.5 text-[9px] font-black uppercase border-none",
-                                                p.status === 'ativo' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted-foreground/10 text-muted-foreground'
-                                            )}>
-                                                {p.status || 'ativo'}
-                                            </Badge>
                                         </TableCell>
                                         <TableCell className="text-right pr-8">
                                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -157,7 +157,7 @@ const Responsaveis = () => {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="rounded-3xl sm:max-w-[550px] border-none shadow-2xl">
+                <DialogContent className="rounded-3xl sm:max-w-[600px] border-none shadow-2xl overflow-y-auto max-h-[90vh]">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
                             <ShieldCheck className="h-6 w-6 text-primary" />
@@ -222,6 +222,51 @@ const Responsaveis = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {editingPerfil && (
+                            <div className="col-span-2 space-y-4 pt-4 border-t border-muted-foreground/10">
+                                <div className="flex items-center gap-2">
+                                    <UserPlus className="h-4 w-4 text-primary" />
+                                    <span className="text-[11px] font-black uppercase text-foreground tracking-wider">Vincular a um Aluno</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <select
+                                        className="flex-1 h-12 rounded-2xl border border-muted-foreground/10 bg-background px-4 font-bold text-sm outline-none"
+                                        value={selectedAlunoId}
+                                        onChange={(e) => setSelectedAlunoId(e.target.value)}
+                                    >
+                                        <option value="">Selecionar Aluno...</option>
+                                        {alunos.filter(a => !a.responsaveis?.some(r => r.perfil_id === editingPerfil.id)).map(a => (
+                                            <option key={a.id} value={a.id}>{a.nome}</option>
+                                        ))}
+                                    </select>
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            if (selectedAlunoId) {
+                                                vincularResponsavelAluno(editingPerfil.id, selectedAlunoId);
+                                                setSelectedAlunoId('');
+                                            }
+                                        }}
+                                        disabled={!selectedAlunoId}
+                                        className="rounded-2xl h-12 px-6 font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                                    >
+                                        Vincular
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <p className="text-[10px] uppercase font-black text-muted-foreground ml-1">Alunos Vinculados</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {alunos.filter(a => a.responsaveis?.some(r => r.perfil_id === editingPerfil.id)).map(a => (
+                                            <Badge key={a.id} className="rounded-xl px-3 py-1 bg-emerald-500/10 text-emerald-600 border-none font-bold text-[10px] flex items-center gap-2">
+                                                {a.nome}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter className="gap-2">
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-2xl h-12 font-bold px-8">Cancelar</Button>
