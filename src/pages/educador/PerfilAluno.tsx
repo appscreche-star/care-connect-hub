@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock } from 'lucide-react';
+import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock, DoorOpen, Package } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 
 const moods = [
@@ -163,6 +163,21 @@ const PerfilAluno = () => {
   const [albumLegenda, setAlbumLegenda] = useState('');
   const [albumConquista, setAlbumConquista] = useState(false);
   const [albumLoading, setAlbumLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('presenca');
+
+  const menuItems = [
+    { id: 'presenca', label: 'Presença', icon: DoorOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'saude', label: 'Saúde', icon: Thermometer, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { id: 'higiene', label: 'Higiene', icon: Droplets, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'bemestar', label: 'Bem-estar', icon: Smile, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'alimentacao', label: 'Refeição', icon: UtensilsCrossed, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { id: 'sono', label: 'Sono', icon: MoonIcon, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'fralda', label: 'Fralda', icon: Baby, color: 'text-amber-700', bg: 'bg-amber-50' },
+    { id: 'album', label: 'Álbum', icon: Camera, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { id: 'ocorrencia', label: 'Ocorrência', icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive/5' },
+    { id: 'mochila', label: 'Mochila', icon: Package, color: 'text-slate-500', bg: 'bg-slate-50' },
+    { id: 'recados', label: 'Recados', icon: MessageSquare, color: 'text-cyan-500', bg: 'bg-cyan-50' },
+  ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -242,11 +257,47 @@ const PerfilAluno = () => {
       </button>
 
       <div className="flex items-center gap-4">
-        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary">{aluno.nome[0]}</div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">{aluno.nome}</h1>
-          <p className="text-sm text-muted-foreground">{aluno.idade || 'Idade não informada'}</p>
+        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl font-black text-primary border-2 border-primary/20 shadow-inner">
+          {aluno.nome[0]}
         </div>
+        <div>
+          <h1 className="text-xl font-black text-foreground tracking-tight">{aluno.nome}</h1>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{aluno.idade || 'Idade não informada'}</p>
+        </div>
+      </div>
+
+      {/* Action Menu Grid */}
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-11 animate-in fade-in duration-700">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 p-2 rounded-2xl transition-all border-2",
+                isActive
+                  ? cn("border-primary/40 shadow-lg shadow-primary/5 scale-105", item.bg)
+                  : "border-transparent bg-card/40 hover:bg-card hover:border-muted-foreground/10"
+              )}
+            >
+              <div className={cn(
+                "h-10 w-10 rounded-xl flex items-center justify-center transition-transform",
+                item.color,
+                isActive ? "scale-110" : ""
+              )}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-wider text-center line-clamp-1",
+                isActive ? "text-primary" : "text-muted-foreground/70"
+              )}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Alertas de Saúde */}
@@ -293,370 +344,380 @@ const PerfilAluno = () => {
       )}
 
       {/* Presença */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Presença</CardTitle></CardHeader>
-        <CardContent>
-          <Button
-            className={`w-full h-14 rounded-xl text-base gap-3 ${checkedIn ? 'bg-destructive hover:bg-destructive/90' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-            onClick={() => handleAction('presenca', { status: checkedIn ? 'saida' : 'entrada' }, checkedIn ? 'Check-out realizado' : 'Check-in realizado')}
-          >
-            {checkedIn ? <><LogOut className="h-5 w-5" /> Check-out</> : <><LogIn className="h-5 w-5" /> Check-in</>}
-          </Button>
-        </CardContent>
-      </Card>
+      {activeTab === 'presenca' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300">
+          <CardHeader className="pb-2"><CardTitle className="text-base font-black flex items-center gap-2"><DoorOpen className="h-5 w-5 text-emerald-500" /> Presença</CardTitle></CardHeader>
+          <CardContent>
+            <Button
+              className={cn(
+                "w-full h-16 rounded-2xl text-base font-black gap-3 transition-all shadow-lg",
+                checkedIn ? 'bg-destructive hover:bg-destructive/90 shadow-destructive/20' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
+              )}
+              onClick={() => handleAction('presenca', { status: checkedIn ? 'saida' : 'entrada' }, checkedIn ? 'Check-out realizado' : 'Check-in realizado')}
+            >
+              {checkedIn ? <><LogOut className="h-5 w-5" /> Registrar Saída</> : <><LogIn className="h-5 w-5" /> Registrar Entrada</>}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Saúde e Temperatura */}
-      <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-card">
-        <CardHeader className="pb-2 border-b mb-3 bg-muted/20">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Thermometer className="h-4 w-4 text-primary" /> Saúde e Monitoramento
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-2">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Temperatura (°C)</Label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  step="0.1"
-                  placeholder="36.5"
-                  className="rounded-xl h-11 pl-10"
-                  onBlur={(e) => {
-                    if (e.target.value) handleAction('saude', { temperatura: e.target.value }, `Temperatura: ${e.target.value}°C`);
-                  }}
-                />
-                <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+      {activeTab === 'saude' && (
+        <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-card animate-in zoom-in-95 duration-300">
+          <CardHeader className="pb-2 border-b mb-3 bg-muted/20">
+            <CardTitle className="text-sm font-black flex items-center gap-2 text-rose-600">
+              <Thermometer className="h-4 w-4" /> Saúde e Monitoramento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-2">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-1.5">
+                <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Temperatura (°C)</p>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="36.5"
+                    className="rounded-xl h-11 pl-10 font-bold"
+                    onBlur={(e) => {
+                      if (e.target.value) handleAction('saude', { temperatura: e.target.value }, `Temperatura: ${e.target.value}°C`);
+                    }}
+                  />
+                  <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-rose-500" />
+                </div>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Medicação</p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full h-11 rounded-xl gap-2 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold">
+                      <Pill className="h-4 w-4" /> Administrar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Administrar Medicação</AlertDialogTitle>
+                      <AlertDialogDescription className="text-sm font-medium">
+                        {aluno.medicamentos_uso_continuo
+                          ? `Medicação: ${aluno.medicamentos_uso_continuo}`
+                          : "Nenhum medicamento de uso contínuo registrado."}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-xl font-bold">Cancelar</AlertDialogCancel>
+                      <AlertDialogAction className="rounded-xl font-bold bg-rose-500 hover:bg-rose-600" onClick={() => handleAction('saude', { med: 'dose_ok' }, "Medicação realizada")}>Confirmar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-            <div className="flex-1 space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Medicação</Label>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="w-full h-11 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5">
-                    <Pill className="h-4 w-4" /> Administrar
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-2xl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Administrar Medicação</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {aluno.medicamentos_uso_continuo
-                        ? `Medicação: ${aluno.medicamentos_uso_continuo}`
-                        : "Nenhum medicamento de uso contínuo registrado."}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                    <AlertDialogAction className="rounded-xl" onClick={() => handleAction('saude', { med: 'dose_ok' }, "Medicação realizada")}>Confirmar</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Higiene */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4" /> Higiene</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2 text-center">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Banho</Label>
-              <Toggle
-                className="w-full h-12 rounded-xl gap-2 border data-[state=on]:bg-emerald-500 data-[state=on]:text-white"
-                onPressedChange={(pressed) => handleAction('higiene', { item: 'banho', ok: pressed }, "Registro de Banho")}
-              >
-                <Droplets className="h-4 w-4" /> Realizado
-              </Toggle>
+      {activeTab === 'higiene' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-lg border-none">
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2 font-black text-blue-600"><Sparkles className="h-4 w-4" /> Higiene do Dia</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2 text-center">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Banho</p>
+                <Toggle
+                  className="w-full h-16 rounded-2xl gap-2 border-2 border-transparent bg-muted/20 data-[state=on]:bg-blue-500 data-[state=on]:text-white transition-all font-bold shadow-sm"
+                  onPressedChange={(pressed) => handleAction('higiene', { item: 'banho', ok: pressed }, "Registro de Banho")}
+                >
+                  <Droplets className="h-5 w-5" /> Banho OK
+                </Toggle>
+              </div>
+              <div className="space-y-2 text-center">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Saúde Bucal</p>
+                <Toggle
+                  className="w-full h-16 rounded-2xl gap-2 border-2 border-transparent bg-muted/20 data-[state=on]:bg-sky-500 data-[state=on]:text-white transition-all font-bold shadow-sm"
+                  onPressedChange={(pressed) => handleAction('higiene', { item: 'bucal', ok: pressed }, "Higiene Bucal")}
+                >
+                  <Sparkles className="h-5 w-5" /> Escovação OK
+                </Toggle>
+              </div>
             </div>
-            <div className="space-y-2 text-center">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Higiene Bucal</Label>
-              <Toggle
-                className="w-full h-12 rounded-xl gap-2 border data-[state=on]:bg-blue-500 data-[state=on]:text-white"
-                onPressedChange={(pressed) => handleAction('higiene', { item: 'bucal', ok: pressed }, "Higiene Bucal")}
-              >
-                <Sparkles className="h-4 w-4" /> Realizado
-              </Toggle>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bem-estar */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Bem-estar</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-2">
-            {moods.map(m => (
-              <button
-                key={m.label}
-                onClick={() => handleAction('bemestar', { humor: m.label, emoji: m.emoji }, `Humor: ${m.label}`)}
-                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all min-h-[72px] ${selectedMood === m.label ? 'bg-primary/10 ring-2 ring-primary' : 'bg-accent/50 hover:bg-accent'}`}
-              >
-                <span className="text-2xl">{m.emoji}</span>
-                <span className="text-[10px] font-medium text-foreground">{m.label}</span>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {activeTab === 'bemestar' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-lg border-none">
+          <CardHeader className="pb-2"><CardTitle className="text-base font-black text-amber-600">Como está o Humor?</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-2">
+              {moods.map(m => (
+                <button
+                  key={m.label}
+                  onClick={() => handleAction('bemestar', { humor: m.label, emoji: m.emoji }, `Humor: ${m.label}`)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all min-h-[85px] border-2",
+                    selectedMood === m.label
+                      ? 'bg-amber-500/10 border-amber-500/40 ring-4 ring-amber-500/5'
+                      : 'bg-accent/30 border-transparent hover:bg-accent'
+                  )}
+                >
+                  <span className="text-3xl">{m.emoji}</span>
+                  <span className="text-[10px] font-black tracking-tight text-foreground uppercase">{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Alimentação */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><UtensilsCrossed className="h-4 w-4" /> Alimentação</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            {['Aceitou tudo', 'Aceitou metade', 'Recusou'].map(opt => (
-              <Button key={opt} variant="outline" className="rounded-xl h-12 text-xs" onClick={() => handleAction('alimentacao', { status: opt, ml: mlBottle }, `Alimentação: ${opt}`)}>
-                {opt}
-              </Button>
-            ))}
-          </div>
-          <Input placeholder="ml da mamadeira (opcional)" type="number" value={mlBottle} onChange={e => setMlBottle(e.target.value)} className="rounded-xl" />
-        </CardContent>
-      </Card>
+      {activeTab === 'alimentacao' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-lg border-none">
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2 text-orange-600 font-black"><UtensilsCrossed className="h-4 w-4" /> Alimentação</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Aceitou tudo', emoji: '🥗' },
+                { label: 'Aceitou metade', emoji: '🥣' },
+                { label: 'Recusou', emoji: '❌' }
+              ].map(opt => (
+                <Button key={opt.label} variant="outline" className="rounded-2xl h-16 flex flex-col gap-1 text-[10px] font-black uppercase tracking-tighter transition-all hover:bg-orange-500 hover:text-white border-orange-100" onClick={() => handleAction('alimentacao', { status: opt.label, ml: mlBottle }, `Alimentação: ${opt.label}`)}>
+                  <span className="text-xl">{opt.emoji}</span>
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Mamadeira (Opcional)</p>
+              <Input placeholder="Quantidade em ml..." type="number" value={mlBottle} onChange={e => setMlBottle(e.target.value)} className="rounded-xl h-12 font-bold focus:ring-orange-200" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sono */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><MoonIcon className="h-4 w-4" /> Sono</CardTitle></CardHeader>
-        <CardContent>
-          <Button
-            className={`w-full h-14 rounded-xl text-base gap-3 ${sleeping ? 'bg-purple-500 hover:bg-purple-600' : ''}`}
-            variant={sleeping ? 'default' : 'outline'}
-            onClick={() => handleAction('sono', { status: sleeping ? 'acordado' : 'dormindo' }, sleeping ? 'Soneca encerrada' : 'Soneca iniciada')}
-          >
-            <MoonIcon className="h-5 w-5" /> {sleeping ? 'Encerrar Soneca' : 'Iniciar Soneca'}
-          </Button>
-        </CardContent>
-      </Card>
+      {activeTab === 'sono' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-xl border-none overflow-hidden text-center">
+          <CardHeader className="pb-2 bg-purple-500/5"><CardTitle className="text-base flex items-center justify-center gap-2 text-purple-600 font-black text-center"><MoonIcon className="h-4 w-4" /> Horário da Soneca</CardTitle></CardHeader>
+          <CardContent className="pt-6">
+            <Button
+              className={cn(
+                "w-full h-20 rounded-[1.5rem] text-lg font-black gap-4 transition-all shadow-lg",
+                sleeping ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20' : 'bg-primary hover:bg-primary/90 shadow-primary/20'
+              )}
+              onClick={() => handleAction('sono', { status: sleeping ? 'acordado' : 'dormindo' }, sleeping ? 'Soneca encerrada' : 'Soneca iniciada')}
+            >
+              <MoonIcon className={cn("h-6 w-6", sleeping ? "animate-pulse" : "")} />
+              {sleeping ? 'Acordou Agora' : 'Iniciar Soneca'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Evacuação */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2"><Baby className="h-4 w-4" /> Evacuação</CardTitle>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-bold italic"><History className="h-3 w-3" /> Histórico</div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: 'Xixi', style: 'border-yellow-200 bg-yellow-50 text-yellow-700' },
-              { label: 'Cocô Normal', style: 'border-amber-200 bg-amber-50 text-amber-900' },
-              { label: 'Cocô Alterado', style: 'border-destructive/20 bg-destructive/5 text-destructive' },
-              { label: 'Fralda Seca', style: 'border-emerald-200 bg-emerald-50 text-emerald-700' }
-            ].map(opt => (
-              <Button key={opt.label} variant="outline" className={cn("rounded-xl h-11 text-xs border", opt.style)} onClick={() => handleAction('fralda', { status: opt.label }, `Fralda: ${opt.label}`)}>
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="max-h-[100px] overflow-y-auto space-y-1">
-              {registros
-                .filter(r => r.tipo_registro === 'fralda' && new Date(r.created_at).toDateString() === new Date().toDateString())
-                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                .map((r, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/40 text-[10px] border border-muted">
-                    <span className="font-bold opacity-70">{new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span className="font-bold">{r.detalhes?.status}</span>
-                  </div>
-                ))}
+      {activeTab === 'fralda' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-lg border-none">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-800 font-black"><Baby className="h-4 w-4" /> Registro de Fralda</CardTitle>
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-black uppercase tracking-widest"><History className="h-3 w-3" /> Histórico</div>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Xixi', style: 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-500 hover:text-white' },
+                { label: 'Cocô Normal', style: 'border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-800 hover:text-white' },
+                { label: 'Cocô Alterado', style: 'border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive hover:text-white' },
+                { label: 'Fralda Seca', style: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white' }
+              ].map(opt => (
+                <Button key={opt.label} variant="outline" className={cn("rounded-2xl h-14 text-[10px] font-black uppercase border transition-all", opt.style)} onClick={() => handleAction('fralda', { status: opt.label }, `Fralda: ${opt.label}`)}>
+                  {opt.label}
+                </Button>
+              ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="space-y-2">
+              <div className="max-h-[120px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                {registros
+                  .filter(r => r.tipo_registro === 'fralda' && new Date(r.created_at).toDateString() === new Date().toDateString())
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((r, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 text-[10px] border border-muted-foreground/10 group">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-muted-foreground opacity-50" />
+                        <span className="font-bold opacity-70">{new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <span className="font-black text-foreground uppercase">{r.detalhes?.status}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Mochila */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShirtIcon className="h-4 w-4" /> Mochila</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-2">
-            {['Fralda', 'Pomada', 'Roupa'].map(item => (
-              <AlertDialog key={item}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="rounded-xl h-12 text-xs">Solicitar {item}</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-2xl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Solicitar {item}</AlertDialogTitle>
-                    <AlertDialogDescription>Confirma a solicitação de {item.toLowerCase()} para {aluno.nome}? O responsável será notificado.</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                    <AlertDialogAction className="rounded-xl" onClick={() => handleAction('mochila', { item }, `${item} solicitada`)}>Confirmar</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Álbum Pedagógico — Full Implementation */}
-      <Card className="rounded-[2rem] border-none shadow-xl bg-card overflow-hidden">
-        <div className="h-1.5 w-full bg-gradient-to-r from-primary via-pink-400 to-purple-500" />
-        <CardHeader className="pb-2 pt-5">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Camera className="h-5 w-5 text-primary" />
-            Álbum / Atividades Pedagógicas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5 pb-6">
-
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture={undefined}
-            className="hidden"
-            onChange={handleFileChange}
-          />
-
-          {/* Photo Upload Area */}
-          {albumFoto ? (
-            <div className="relative rounded-2xl overflow-hidden aspect-video bg-muted">
-              <img src={albumFoto} alt="Preview" className="w-full h-full object-cover" />
-              <button
-                onClick={() => { setAlbumFoto(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-all"
-              >
-                <XIcon className="h-4 w-4" />
-              </button>
-              <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white/80 bg-black/40 px-2 py-0.5 rounded-full uppercase tracking-widest">
-                Foto selecionada
-              </div>
+      {activeTab === 'mochila' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-lg border-none">
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2 text-slate-600 font-black"><ShirtIcon className="h-5 w-5" /> Mochila / Reposição</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {['FRALDA', 'POMADA', 'ROUPA'].map(item => (
+                <AlertDialog key={item}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="rounded-[1.25rem] h-16 text-[10px] font-black uppercase tracking-widest border-2 hover:bg-slate-500 hover:text-white border-muted/30">Pedir {item}</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-3xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Solicitar Item</AlertDialogTitle>
+                      <AlertDialogDescription className="font-medium text-sm">Confirma a solicitação de <b>{item.toLowerCase()}</b> para os responsáveis? Eles receberão uma notificação.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2">
+                      <AlertDialogCancel className="rounded-xl font-bold">Cancelar</AlertDialogCancel>
+                      <AlertDialogAction className="rounded-xl font-bold bg-slate-600 hover:bg-slate-700" onClick={() => handleAction('mochila', { item }, `${item} solicitada`)}>Confirmar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ))}
             </div>
-          ) : (
-            <div
-              className="rounded-2xl border-2 border-dashed border-primary/20 bg-primary/3 hover:bg-primary/8 transition-all cursor-pointer group"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="flex flex-col items-center justify-center gap-3 py-10">
-                <div className="h-16 w-16 rounded-2xl bg-primary/10 group-hover:bg-primary/20 transition-all flex items-center justify-center">
-                  <ImagePlus className="h-8 w-8 text-primary" />
-                </div>
-                <div className="text-center space-y-1">
-                  <p className="text-sm font-bold text-foreground">Adicionar Foto</p>
-                  <p className="text-[11px] text-muted-foreground">Câmera ou galeria do dispositivo</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60 border border-primary/20 rounded-full px-3 py-1">📷 Câmera</span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60 border border-primary/20 rounded-full px-3 py-1">🖼️ Galeria</span>
-                </div>
-              </div>
-            </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Category Dropdown */}
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Categoria da Atividade</Label>
-            <Select value={albumCategoria} onValueChange={setAlbumCategoria}>
-              <SelectTrigger className="rounded-xl h-12">
-                <SelectValue placeholder="Selecione o tipo de atividade..." />
-              </SelectTrigger>
-              <SelectContent>
-                {ACTIVITY_TYPES.map(a => (
-                  <SelectItem key={a.value} value={a.value}>
-                    <span className="flex items-center gap-2">
-                      <span>{a.emoji}</span>
-                      <span>{a.value}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Visual category chip */}
-            {albumCategoria && (() => {
-              const cat = ACTIVITY_TYPES.find(a => a.value === albumCategoria);
-              return cat ? (
-                <div className={cn("inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest rounded-full px-3 py-1.5 border", cat.color)}>
-                  <span>{cat.emoji}</span> {cat.value}
-                </div>
-              ) : null;
-            })()}
-          </div>
-
-          {/* Caption */}
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Legenda / Descrição</Label>
-            <Textarea
-              placeholder="Descreva o momento especial..."
-              className="rounded-xl min-h-[80px] resize-none"
-              value={albumLegenda}
-              onChange={e => setAlbumLegenda(e.target.value)}
+      {/* Álbum Pedagógico — Tab Integration */}
+      {activeTab === 'album' && (
+        <Card className="rounded-[2.5rem] border-none shadow-2xl bg-card overflow-hidden animate-in zoom-in-95 duration-500">
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary via-indigo-400 to-purple-500" />
+          <CardHeader className="pb-2 pt-6">
+            <CardTitle className="text-base font-black flex items-center gap-2 text-indigo-600">
+              <Camera className="h-5 w-5" />
+              Álbum / Atividade do Dia
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 pb-8 pt-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
             />
-          </div>
 
-          {/* Conquista Checkbox */}
-          <div
-            className={cn(
-              "flex items-start space-x-3 p-4 rounded-2xl border-2 cursor-pointer transition-all select-none",
-              albumConquista
-                ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-md shadow-amber-100"
-                : "bg-muted/20 border-dashed border-muted-foreground/20 hover:border-primary/30"
-            )}
-            onClick={() => setAlbumConquista(v => !v)}
-          >
-            <Checkbox
-              id="conquista-cb"
-              checked={albumConquista}
-              onCheckedChange={(v) => setAlbumConquista(!!v)}
-              className="mt-0.5"
-            />
-            <div className="grid gap-1 leading-none">
-              <label htmlFor="conquista-cb" className="text-sm font-black text-foreground cursor-pointer flex items-center gap-2">
-                {albumConquista ? '🏆' : '⭐'} Marcar como Primeira Vez / Conquista
-              </label>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Dispara uma <span className="font-bold text-amber-600">celebração especial</span> no app dos responsáveis com animação e notificação prioritária.
-              </p>
-            </div>
-          </div>
-
-          {/* Publish Button */}
-          <Button
-            className={cn(
-              "w-full rounded-2xl h-14 font-black text-base gap-3 shadow-xl transition-all",
-              albumConquista
-                ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 shadow-amber-400/30"
-                : "shadow-primary/20"
-            )}
-            onClick={handlePublishAlbum}
-            disabled={albumLoading}
-          >
-            {albumLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : albumConquista ? (
-              <><Sparkles className="h-5 w-5" /> Publicar Conquista! 🏆</>
+            {albumFoto ? (
+              <div className="relative rounded-3xl overflow-hidden aspect-video bg-muted shadow-lg ring-4 ring-muted/10 group">
+                <img src={albumFoto} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <button
+                  onClick={() => { setAlbumFoto(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  className="absolute top-3 right-3 h-10 w-10 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-all backdrop-blur-md"
+                >
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
             ) : (
-              <><Camera className="h-5 w-5" /> Publicar no Álbum</>
+              <div
+                className="rounded-3xl border-4 border-dashed border-indigo-100 bg-indigo-50/20 hover:bg-indigo-50 hover:border-indigo-200 transition-all cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                  <div className="h-16 w-16 rounded-2xl bg-indigo-100 group-hover:bg-indigo-200 transition-all flex items-center justify-center shadow-inner">
+                    <ImagePlus className="h-8 w-8 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-foreground">Enviar para o Álbum</p>
+                    <p className="text-xs text-muted-foreground mt-1 tracking-tight font-medium">Capture um momento especial da atividade</p>
+                  </div>
+                </div>
+              </div>
             )}
-          </Button>
-        </CardContent>
-      </Card>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Tipo de Atividade</p>
+                <Select value={albumCategoria} onValueChange={setAlbumCategoria}>
+                  <SelectTrigger className="rounded-2xl h-14 border-muted-foreground/10 text-base font-medium">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {ACTIVITY_TYPES.map(a => (
+                      <SelectItem key={a.value} value={a.value} className="rounded-xl my-1">
+                        <span className="flex items-center gap-2 font-black text-xs uppercase">
+                          <span>{a.emoji}</span>
+                          <span>{a.value}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Legenda (Opcional)</p>
+                <Textarea
+                  placeholder="Escreva uma mensagem para os pais..."
+                  className="rounded-2xl min-h-[100px] resize-none border-muted-foreground/10 p-4 font-medium"
+                  value={albumLegenda}
+                  onChange={e => setAlbumLegenda(e.target.value)}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  "flex items-start space-x-3 p-5 rounded-3xl border-2 cursor-pointer transition-all select-none",
+                  albumConquista ? "bg-amber-500/5 border-amber-300 shadow-md shadow-amber-100" : "bg-card border-dashed border-muted-foreground/10 hover:border-amber-200"
+                )}
+                onClick={() => setAlbumConquista(v => !v)}
+              >
+                <Checkbox id="conquista-cb" checked={albumConquista} onCheckedChange={(v) => setAlbumConquista(!!v)} className="h-5 w-5 mt-0.5 border-amber-300" />
+                <div className="grid gap-1">
+                  <label className="text-sm font-black text-foreground cursor-pointer flex items-center gap-2">
+                    {albumConquista ? '🏅' : '⭐'} Marcar como Conquista
+                  </label>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed font-bold tracking-tight">
+                    Isso dispara uma <span className="text-amber-600">Celebração Especial</span> animada no app dos pais.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                className={cn(
+                  "w-full rounded-[1.5rem] h-16 font-black text-lg gap-3 shadow-xl transition-all",
+                  albumConquista ? "bg-amber-500 hover:bg-amber-600 shadow-amber-400/30" : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30"
+                )}
+                onClick={handlePublishAlbum}
+                disabled={albumLoading}
+              >
+                {albumLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : albumConquista ? <><Sparkles className="h-6 w-6" /> PUBLICAR CONQUISTA!</> : <><Camera className="h-6 w-6" /> PUBLICAR NO ÁLBUM</>}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Registro de Ocorrências (Segurança) */}
-      <OcorrenciaCard aluno={aluno} addOcorrencia={addOcorrencia} />
+      {activeTab === 'ocorrencia' && (
+        <div className="animate-in zoom-in-95 duration-300">
+          <OcorrenciaCard aluno={aluno} addOcorrencia={addOcorrencia} />
+        </div>
+      )}
 
       {/* Recados */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Recados</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Textarea id="recado-texto" placeholder="Escreva um recado para os pais..." className="rounded-xl min-h-[80px]" />
-          <Button className="rounded-xl w-full" onClick={() => {
-            const el = document.getElementById('recado-texto') as HTMLTextAreaElement;
-            handleAction('recado', { mensagem: el.value }, 'Recado enviado');
-            el.value = '';
-          }}>
-            Enviar Recado
-          </Button>
-        </CardContent>
-      </Card>
+      {activeTab === 'recados' && (
+        <Card className="rounded-2xl animate-in zoom-in-95 duration-300 shadow-lg border-none">
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2 text-cyan-600 font-black"><MessageSquare className="h-4 w-4" /> Recados Rápidos</CardTitle></CardHeader>
+          <CardContent className="space-y-4 pt-2">
+            <Textarea id="recado-texto" placeholder="Mensagem para os pais..." className="rounded-2xl min-h-[120px] p-4 text-base font-medium border-muted-foreground/10 focus:ring-cyan-200" />
+            <Button className="rounded-[1.25rem] w-full h-16 font-black text-lg bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" onClick={() => {
+              const el = document.getElementById('recado-texto') as HTMLTextAreaElement;
+              if (!el.value.trim()) return;
+              handleAction('recado', { mensagem: el.value }, 'Recado enviado');
+              el.value = '';
+            }}>
+              <Check className="h-6 w-6 mr-2" /> Enviar Recado
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
+    </div >
   );
 };
 
