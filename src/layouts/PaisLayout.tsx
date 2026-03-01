@@ -87,7 +87,7 @@ const PaisLayout = () => {
       </header>
 
       {/* Content */}
-      <main className="flex-1 p-4 pb-20 max-w-lg mx-auto w-full overflow-auto">
+      <main className="flex-1 p-4 pb-20 max-w-5xl mx-auto w-full overflow-auto">
         <Outlet />
       </main>
 

@@ -29,7 +29,7 @@ const EducadorLayout = () => {
           </button>
         </div>
       </header>
-      <main className="flex-1 p-4 max-w-lg mx-auto w-full">
+      <main className="flex-1 p-4 max-w-5xl mx-auto w-full">
         <Outlet />
       </main>
     </div>

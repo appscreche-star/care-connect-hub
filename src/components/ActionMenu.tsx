@@ -21,7 +21,7 @@ const ActionMenu: React.FC<ActionMenuProps> = ({ items, activeTab, onTabChange, 
     return (
         <div
             className={cn(
-                "flex overflow-x-auto pb-4 gap-3 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-6 lg:grid-cols-11 sm:gap-4 sm:pb-0 sm:overflow-visible animate-in fade-in duration-700",
+                "flex overflow-x-auto pb-4 gap-3 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center sm:gap-4 sm:pb-2 sm:overflow-visible animate-in fade-in duration-700",
                 className
             )}
         >
@@ -34,22 +34,22 @@ const ActionMenu: React.FC<ActionMenuProps> = ({ items, activeTab, onTabChange, 
                         key={item.id}
                         onClick={() => onTabChange(item.id)}
                         className={cn(
-                            "flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition-all border-2 flex-shrink-0 w-20 sm:w-auto",
+                            "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all border-2 flex-shrink-0 w-24 sm:w-28 md:w-32",
                             isActive
-                                ? cn("border-primary/40 shadow-lg shadow-primary/5 scale-105", item.bg)
+                                ? cn("border-primary/40 shadow-xl shadow-primary/10 scale-105", item.bg)
                                 : "border-transparent bg-card/40 hover:bg-card hover:border-muted-foreground/10"
                         )}
                     >
                         <div className={cn(
-                            "h-10 w-10 rounded-xl flex items-center justify-center transition-transform",
+                            "h-12 w-12 rounded-xl flex items-center justify-center transition-transform shadow-sm",
                             item.color,
-                            isActive ? "scale-110" : ""
+                            isActive ? "scale-110 bg-white/50" : "bg-white/30"
                         )}>
-                            <Icon className="h-5 w-5" />
+                            <Icon className="h-6 w-6" />
                         </div>
                         <span className={cn(
-                            "text-[9px] font-black uppercase tracking-wider text-center line-clamp-1 whitespace-nowrap",
-                            isActive ? "text-primary" : "text-muted-foreground/70"
+                            "text-[10px] sm:text-xs font-black uppercase tracking-wider text-center line-clamp-1 whitespace-nowrap",
+                            isActive ? "text-primary" : "text-muted-foreground/80"
                         )}>
                             {item.label}
                         </span>
