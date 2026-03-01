@@ -155,7 +155,13 @@ const PerfilAluno = () => {
   const [checkedIn, setCheckedIn] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [sleeping, setSleeping] = useState(false);
+  const [sleepCount, setSleepCount] = useState(0);
   const [mlBottle, setMlBottle] = useState('');
+  const [selectedFeeding, setSelectedFeeding] = useState<string | null>(null);
+
+  // Hygiene counters & states
+  const [xixi, setXixi] = useState({ count: 0, tipo: null as string | null });
+  const [coco, setCoco] = useState({ count: 0, tipo: null as string | null });
 
   // Album state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -164,7 +170,7 @@ const PerfilAluno = () => {
   const [albumLegenda, setAlbumLegenda] = useState('');
   const [albumConquista, setAlbumConquista] = useState(false);
   const [albumLoading, setAlbumLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('presenca');
+  const [activeTab, setActiveTab] = useState<string>('');
 
   const menuItems = [
     { id: 'presenca', label: 'Presença', icon: DoorOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -239,6 +245,10 @@ const PerfilAluno = () => {
 
     const lastSleep = registros.find(r => r.tipo_registro === 'sono');
     if (lastSleep) setSleeping(lastSleep.detalhes?.status === 'dormindo');
+    const todaySleeps = registros.filter(r => r.tipo_registro === 'sono' && r.detalhes?.status === 'dormindo');
+    setSleepCount(todaySleeps.length);
+    const lastFeeding = registros.find(r => r.tipo_registro === 'alimentacao');
+    if (lastFeeding) setSelectedFeeding(lastFeeding.detalhes?.status ?? null);
   }, [registros]);
 
   if (loading || !aluno) {
@@ -300,65 +310,83 @@ const PerfilAluno = () => {
         </div>
       )}
 
-      {/* ACTION GRID (3 Columns Desktop, 1 Col Mobile) */}
+      {/* ACTION GRID */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-        {/* Left Col: Feeding & Sleep (Priority) */}
+        {/* Col 1: Feeding & Sleep */}
         <div className="md:col-span-5 space-y-4">
-          {/* Section: Feeding */}
-          <Card className="rounded-[2.5rem] border-none shadow-sm bg-card p-5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><UtensilsCrossed className="h-12 w-12" /></div>
-            <h3 className="text-xs font-black text-orange-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-orange-500" /> Alimentação
-            </h3>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Aceitou tudo', emoji: '🥗', color: 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-500' },
-                  { label: 'Aceitou metade', emoji: '🥣', color: 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-500' },
-                  { label: 'Recusou', emoji: '❌', color: 'bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-500' }
-                ].map(opt => (
-                  <Button
-                    key={opt.label}
-                    variant="outline"
-                    className={cn("rounded-2xl h-20 flex flex-col gap-1 text-[10px] font-black uppercase tracking-tighter transition-all hover:text-white border-2", opt.color)}
-                    onClick={() => handleAction('alimentacao', { status: opt.label, ml: mlBottle }, `Alimentação: ${opt.label}`)}
-                  >
-                    <span className="text-2xl">{opt.emoji}</span>
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
-              <div className="relative group">
-                <Input
-                  placeholder="Mamadeira (ml)..."
-                  type="number"
-                  value={mlBottle}
-                  onChange={e => setMlBottle(e.target.value)}
-                  className="rounded-2xl h-12 font-bold focus:ring-orange-200 pl-4 bg-muted/30 border-none shadow-inner"
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted-foreground uppercase opacity-40">Mililitros</div>
-              </div>
+          {/* ALIMENTAÇÃO */}
+          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
+            <h3 className="text-[11px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <UtensilsCrossed className="h-3.5 w-3.5" /> Alimentação
+            </h3>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[
+                { label: 'Aceitou tudo', emoji: '🥗' },
+                { label: 'Aceitou metade', emoji: '🥣' },
+                { label: 'Recusou', emoji: '❌' }
+              ].map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => { setSelectedFeeding(opt.label); handleAction('alimentacao', { status: opt.label, ml: mlBottle }, ''); }}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl text-[9px] font-black uppercase border-2 transition-all",
+                    selectedFeeding === opt.label
+                      ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200"
+                      : "bg-muted/30 text-muted-foreground border-transparent hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700"
+                  )}
+                >
+                  <span className="text-xl">{opt.emoji}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-4 py-2">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider shrink-0">Mamadeira</span>
+              <Input
+                placeholder="0 ml"
+                type="number"
+                value={mlBottle}
+                onChange={e => setMlBottle(e.target.value)}
+                onBlur={e => { if (e.target.value) handleAction('alimentacao', { ml: e.target.value, status: selectedFeeding || 'Registrado' }, ''); }}
+                className="flex-1 h-8 font-black text-sm bg-transparent border-none focus:ring-0 p-0 text-right"
+              />
+              <span className="text-[10px] text-muted-foreground font-bold">ml/dia</span>
             </div>
           </Card>
 
-          {/* Section: Sleep */}
-          <Card className="rounded-[2.5rem] border-none shadow-sm bg-indigo-500 p-5 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><MoonIcon className="h-12 w-12" /></div>
-            <h3 className="text-xs font-black uppercase tracking-widest mb-4 opacity-80">Controle de Soneca</h3>
-            <div className="flex items-center justify-between gap-4">
+          {/* CONTROLE DE SONO */}
+          <Card className="rounded-[2rem] border-none shadow-sm bg-indigo-500 p-5 text-white">
+            <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
+              <MoonIcon className="h-3.5 w-3.5" /> Controle de Soneca
+            </h3>
+            <div className="flex items-center gap-4">
               <div className="flex-1">
-                <p className="text-2xl font-black">{sleeping ? 'Dormindo...' : 'Acordado'}</p>
-                <p className="text-[10px] font-bold opacity-60 mt-1 uppercase tracking-tight">Ultimo registro: {registros.find(r => r.tipo_registro === 'sono')?.hora_registro || '--:--'}</p>
+                <p className="text-xl font-black">{sleeping ? 'Dormindo...' : 'Acordado'}</p>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-[10px] font-bold opacity-60 uppercase">Dormiu hoje:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSleepCount(c => Math.max(0, c - 1))}
+                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
+                    >−</button>
+                    <span className="text-sm font-black tabular-nums w-4 text-center">{sleepCount}</span>
+                    <button
+                      onClick={() => { handleAction('sono', { status: 'dormindo', vezes: sleepCount + 1 }, ''); setSleepCount(c => c + 1); }}
+                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
+                    >+</button>
+                  </div>
+                  <span className="text-[10px] font-bold opacity-60">{sleepCount === 1 ? 'vez' : 'vezes'}</span>
+                </div>
               </div>
               <Button
                 size="lg"
                 className={cn(
-                  "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90",
-                  sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-indigo-400 text-white hover:bg-indigo-300"
+                  "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90 shrink-0",
+                  sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20 text-white hover:bg-white/30"
                 )}
-                onClick={() => handleAction('sono', { status: sleeping ? 'acordado' : 'dormindo' }, sleeping ? 'Acordou' : 'Dormiu')}
+                onClick={() => handleAction('sono', { status: sleeping ? 'acordado' : 'dormindo' }, '')}
               >
                 <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-indigo-600" : "")} />
               </Button>
@@ -366,125 +394,147 @@ const PerfilAluno = () => {
           </Card>
         </div>
 
-        {/* Center Col: Diapers & Mood (Efficiency) */}
+        {/* Col 2: Hygiene & Mood */}
         <div className="md:col-span-4 space-y-4">
-          <Card className="rounded-[2.5rem] border-none shadow-sm bg-card p-5 h-full flex flex-col">
-            <h3 className="text-xs font-black text-amber-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-amber-600" /> Registro de Higiene
+
+          {/* HIGIENE */}
+          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
+            <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Droplets className="h-3.5 w-3.5" /> Higiene
             </h3>
 
-            <div className="grid grid-cols-2 gap-2 mb-6">
-              {[
-                { label: 'Xixi', style: 'border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-500 hover:text-white' },
-                { label: 'Cocô OK', style: 'border-amber-200 bg-amber-100/50 text-amber-950 hover:bg-amber-800 hover:text-white' },
-                { label: 'Alterado', style: 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-500 hover:text-white' },
-                { label: 'Seca', style: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white' }
-              ].map(opt => (
-                <Button
-                  key={opt.label}
-                  variant="outline"
-                  className={cn("rounded-2xl h-14 text-[10px] font-black uppercase border-2 transition-all shadow-sm", opt.style)}
-                  onClick={() => handleAction('fralda', { status: opt.label }, `Fralda: ${opt.label}`)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
-
-            <div className="flex-1 bg-muted/20 rounded-3xl p-4 border border-dashed border-border/60 overflow-hidden">
-              <h4 className="text-[10px] font-black text-muted-foreground uppercase mb-3 flex items-center gap-2"><History className="h-3 w-3" /> Hoje</h4>
-              <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
-                {registros.filter(r => r.tipo_registro === 'fralda').slice(0, 5).map((r, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px] font-bold text-muted-foreground bg-background/50 p-2 rounded-xl border border-border/40">
-                    <span>{r.detalhes?.status}</span>
-                    <span className="opacity-40">{r.hora_registro}</span>
+            {/* Xixi */}
+            <div className="mb-4">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Xixi</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-1 bg-muted/30 rounded-2xl flex flex-col items-center justify-center py-2 gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setXixi(s => ({ ...s, count: Math.max(0, s.count - 1) }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">−</button>
+                    <span className="text-lg font-black tabular-nums w-5 text-center">{xixi.count}</span>
+                    <button onClick={() => setXixi(s => ({ ...s, count: s.count + 1 }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">+</button>
                   </div>
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase">{xixi.count === 1 ? 'vez' : 'vezes'}</span>
+                </div>
+                {['Normal', 'Alterado'].map(tipo => (
+                  <button
+                    key={tipo}
+                    onClick={() => { setXixi(s => ({ ...s, tipo })); handleAction('fralda', { tipo_saida: 'xixi', tipo, vezes: xixi.count }, ''); }}
+                    className={cn(
+                      "rounded-2xl py-2 text-[10px] font-black uppercase border-2 transition-all",
+                      xixi.tipo === tipo
+                        ? "bg-yellow-400 text-white border-yellow-400 shadow-md"
+                        : "border-border/40 text-muted-foreground hover:border-yellow-300 hover:bg-yellow-50 hover:text-yellow-700"
+                    )}
+                  >{tipo}</button>
                 ))}
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-4 gap-2 pt-4 border-t border-border/40">
+            {/* Cocô */}
+            <div>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Cocô</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-1 bg-muted/30 rounded-2xl flex flex-col items-center justify-center py-2 gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setCoco(s => ({ ...s, count: Math.max(0, s.count - 1) }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">−</button>
+                    <span className="text-lg font-black tabular-nums w-5 text-center">{coco.count}</span>
+                    <button onClick={() => setCoco(s => ({ ...s, count: s.count + 1 }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">+</button>
+                  </div>
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase">{coco.count === 1 ? 'vez' : 'vezes'}</span>
+                </div>
+                {['Normal', 'Alterado'].map(tipo => (
+                  <button
+                    key={tipo}
+                    onClick={() => { setCoco(s => ({ ...s, tipo })); handleAction('fralda', { tipo_saida: 'coco', tipo, vezes: coco.count }, ''); }}
+                    className={cn(
+                      "rounded-2xl py-2 text-[10px] font-black uppercase border-2 transition-all",
+                      coco.tipo === tipo
+                        ? "bg-amber-600 text-white border-amber-600 shadow-md"
+                        : "border-border/40 text-muted-foreground hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                    )}
+                  >{tipo}</button>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {/* HUMOR */}
+          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
+            <h3 className="text-[11px] font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Smile className="h-3.5 w-3.5" /> Humor
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
               {moods.map(m => (
                 <button
                   key={m.label}
-                  onClick={() => handleAction('bemestar', { humor: m.label, emoji: m.emoji }, `Humor`)}
+                  onClick={() => { setSelectedMood(m.label); handleAction('bemestar', { humor: m.label, emoji: m.emoji }, ''); }}
                   className={cn(
-                    "flex flex-col items-center justify-center p-2 rounded-xl transition-all aspect-square border-2",
-                    selectedMood === m.label ? "bg-amber-100 border-amber-400" : "bg-muted/30 border-transparent hover:bg-muted"
+                    "flex items-center gap-2 px-3 py-2.5 rounded-2xl text-xs font-black border-2 transition-all text-left",
+                    selectedMood === m.label
+                      ? "bg-amber-400 text-white border-amber-400 shadow-md"
+                      : "border-border/40 text-muted-foreground hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
                   )}
                 >
-                  <span className="text-xl">{m.emoji}</span>
+                  <span className="text-lg shrink-0">{m.emoji}</span>
+                  <span>{m.label}</span>
                 </button>
               ))}
             </div>
           </Card>
         </div>
 
-        {/* Right Col: Tools & Recados (Action Center) */}
+        {/* Col 3: Tools & Recados */}
         <div className="md:col-span-3 space-y-4">
-          {/* Quick Actions Card */}
-          <Card className="rounded-[2.5rem] border-none shadow-sm bg-card p-5 space-y-2">
-            <h3 className="text-xs font-black text-rose-600 uppercase tracking-widest mb-3">Assistente</h3>
-
+          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5 space-y-3">
+            <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Ações</h3>
             <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="rounded-2xl h-16 flex flex-col gap-1 border-rose-100 text-rose-600 hover:bg-rose-50"
+              <button
                 onClick={() => setActiveTab('ocorrencia')}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all"
               >
                 <AlertTriangle className="h-5 w-5" />
                 <span className="text-[9px] font-black uppercase">Ocorrência</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-2xl h-16 flex flex-col gap-1 border-indigo-100 text-indigo-600 hover:bg-indigo-50"
+              </button>
+              <button
                 onClick={() => setActiveTab('album')}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all"
               >
                 <Camera className="h-5 w-5" />
                 <span className="text-[9px] font-black uppercase">Álbum</span>
-              </Button>
+              </button>
             </div>
-
-            <div className="pt-2">
-              <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Thermometer className="h-4 w-4 text-rose-500" />
-                  <span className="text-[10px] font-black text-rose-700 uppercase">Febre?</span>
-                </div>
-                <Input
-                  type="number"
-                  placeholder="36.5"
-                  step="0.1"
-                  className="w-16 h-8 text-xs font-black bg-transparent border-none focus:ring-0 text-right p-0"
-                  onBlur={(e) => {
-                    if (e.target.value) handleAction('saude', { temperatura: e.target.value }, `Temp.`);
-                  }}
-                />
+            <div className="flex items-center justify-between bg-rose-50/60 rounded-2xl px-3 py-2.5 border-2 border-rose-100">
+              <div className="flex items-center gap-2">
+                <Thermometer className="h-4 w-4 text-rose-500" />
+                <span className="text-[10px] font-black text-rose-700 uppercase">Temperatura</span>
               </div>
+              <Input
+                type="number"
+                placeholder="36.5"
+                step="0.1"
+                className="w-16 h-7 text-xs font-black bg-transparent border-none focus:ring-0 text-right p-0"
+                onBlur={e => { if (e.target.value) handleAction('saude', { temperatura: e.target.value }, ''); }}
+              />
             </div>
           </Card>
 
-          {/* Recados Direct */}
-          <Card className="rounded-[2.5rem] border-none shadow-sm bg-cyan-600 p-5 text-white h-[280px] flex flex-col">
-            <h3 className="text-xs font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" /> Recado rápido
+          <Card className="rounded-[2rem] border-none shadow-sm bg-cyan-600 p-5 text-white flex flex-col" style={{ minHeight: '260px' }}>
+            <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
+              <MessageSquare className="h-3.5 w-3.5" /> Recado Rápido
             </h3>
             <Textarea
               id="recado-educador"
-              placeholder="Ex: Dormiu em 2 min..."
-              className="flex-1 bg-white/10 border-none rounded-2xl resize-none placeholder:text-white/40 font-bold mb-3 focus-visible:ring-white/20 p-4 scrollbar-hide"
+              placeholder="Ex: Dormiu bem hoje..."
+              className="flex-1 bg-white/10 border-none rounded-2xl resize-none placeholder:text-white/40 font-bold mb-3 focus-visible:ring-white/20 p-3 text-sm"
             />
             <Button
-              className="w-full rounded-2xl bg-white text-cyan-700 font-black hover:bg-white/90 shadow-xl active:scale-95"
+              className="w-full rounded-2xl bg-white text-cyan-700 font-black hover:bg-white/90 shadow-xl active:scale-95 h-10"
               onClick={() => {
                 const el = document.getElementById('recado-educador') as HTMLTextAreaElement;
-                if (el.value.trim()) {
-                  handleAction('recado', { mensagem: el.value }, 'Recado');
-                  el.value = '';
-                }
+                if (el?.value.trim()) { handleAction('recado', { mensagem: el.value }, ''); el.value = ''; }
               }}
             >
-              ENVIAR AGORA
+              ENVIAR
             </Button>
           </Card>
         </div>
