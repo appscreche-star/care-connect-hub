@@ -717,7 +717,6 @@ const PerfilAluno = () => {
         </Card>
       )}
     </div>
-    </div >
   );
 };
 

@@ -196,11 +196,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Error fetching alunos:', error);
         } else {
             setAlunos(data || []);
-            if (data && data.length > 0 && !selectedAlunoId) {
-                setSelectedAlunoId(data[0].id);
+            if (data && data.length > 0) {
+                // Use functional update to avoid dependency on selectedAlunoId if we just want to set it once
+                setSelectedAlunoId(current => current || data[0].id);
             }
         }
-    }, [instituicao?.id, selectedAlunoId]);
+    }, [instituicao?.id]);
 
     const refreshNotificacoes = useCallback(async () => {
         if (!instituicao?.id || instituicao.id === DEFAULT_INST.id) return;
