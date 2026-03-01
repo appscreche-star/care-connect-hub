@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useData, type RegistroDiario } from '@/contexts/DataProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 
 const moods = [
@@ -19,6 +19,17 @@ const moods = [
   { label: 'Tranquilo', icon: Meh, emoji: '😌' },
   { label: 'Cansado', icon: MoonIcon, emoji: '😴' },
   { label: 'Manhoso', icon: Frown, emoji: '😢' },
+];
+
+// Album state & types
+const ACTIVITY_TYPES = [
+  { value: 'Atividade Motora', emoji: '🏃', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+  { value: 'Hora da História', emoji: '📖', color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  { value: 'Recreio / Parquinho', emoji: '🛝', color: 'text-orange-600 bg-orange-50 border-orange-200' },
+  { value: 'Artes / Pintura', emoji: '🎨', color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  { value: 'Música e Dança', emoji: '🎵', color: 'text-pink-600 bg-pink-50 border-pink-200' },
+  { value: 'Descoberta Sensorial', emoji: '🔬', color: 'text-cyan-600 bg-cyan-50 border-cyan-200' },
+  { value: 'Outros', emoji: '⭐', color: 'text-slate-600 bg-slate-50 border-slate-200' },
 ];
 
 const PerfilAluno = () => {
@@ -31,6 +42,59 @@ const PerfilAluno = () => {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [sleeping, setSleeping] = useState(false);
   const [mlBottle, setMlBottle] = useState('');
+
+  // Album state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [albumFoto, setAlbumFoto] = useState<string | null>(null);
+  const [albumCategoria, setAlbumCategoria] = useState('');
+  const [albumLegenda, setAlbumLegenda] = useState('');
+  const [albumConquista, setAlbumConquista] = useState(false);
+  const [albumLoading, setAlbumLoading] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setAlbumFoto(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handlePublishAlbum = useCallback(async () => {
+    if (!aluno) return;
+    if (!albumFoto && !albumLegenda) {
+      toast({ title: '⚠️ Adicione uma foto ou legenda', variant: 'destructive' });
+      return;
+    }
+    setAlbumLoading(true);
+    await addRegistro({
+      aluno_id: aluno.id,
+      tipo_registro: 'album',
+      detalhes: {
+        foto_base64: albumFoto,
+        categoria: albumCategoria || 'Outros',
+        legenda: albumLegenda,
+        conquista: albumConquista,
+      },
+    });
+
+    if (albumConquista) {
+      toast({
+        title: '🏆 Conquista publicada!',
+        description: `Os pais de ${aluno.nome.split(' ')[0]} serão notificados com uma celebração especial! 🎉`,
+        duration: 5000,
+      });
+    } else {
+      toast({ title: '📸 Publicado no álbum!' });
+    }
+
+    // Reset form
+    setAlbumFoto(null);
+    setAlbumCategoria('');
+    setAlbumLegenda('');
+    setAlbumConquista(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setAlbumLoading(false);
+  }, [aluno, albumFoto, albumCategoria, albumLegenda, albumConquista, addRegistro]);
 
   useEffect(() => {
     if (id) fetchRegistrosAluno(id);
@@ -317,55 +381,148 @@ const PerfilAluno = () => {
         </CardContent>
       </Card>
 
-      {/* Álbum Pedagógico */}
-      <Card className="rounded-2xl border-none shadow-md bg-card overflow-hidden">
-        <CardHeader className="pb-2 bg-primary/5">
+      {/* Álbum Pedagógico — Full Implementation */}
+      <Card className="rounded-[2rem] border-none shadow-xl bg-card overflow-hidden">
+        <div className="h-1.5 w-full bg-gradient-to-r from-primary via-pink-400 to-purple-500" />
+        <CardHeader className="pb-2 pt-5">
           <CardTitle className="text-base flex items-center gap-2">
-            <Camera className="h-4 w-4 text-primary" /> Álbum / Atividades Pedagógicas
+            <Camera className="h-5 w-5 text-primary" />
+            Álbum / Atividades Pedagógicas
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Tipo de Atividade</Label>
-              <Select onValueChange={(v) => handleAction('album', { tipo: v }, `Atividade: ${v}`)}>
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue placeholder="Selecione a categoria..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Atividade Motora">Atividade Motora</SelectItem>
-                  <SelectItem value="Hora da História">Hora da História</SelectItem>
-                  <SelectItem value="Recreio / Parquinho">Recreio / Parquinho</SelectItem>
-                  <SelectItem value="Artes / Pintura">Artes / Pintura</SelectItem>
-                  <SelectItem value="Outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <CardContent className="space-y-5 pb-6">
 
-          <div className="h-24 rounded-2xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-all">
-            <Camera className="h-6 w-6 text-muted-foreground opacity-50" />
-            <p className="text-[10px] font-bold text-muted-foreground uppercase">Tirar Foto ou Galeria</p>
-          </div>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture={undefined}
+            className="hidden"
+            onChange={handleFileChange}
+          />
 
-          <div className="space-y-3">
-            <Input placeholder="Legenda da conquista..." className="rounded-xl h-11" />
-            <div className="flex items-center space-x-2 bg-primary/5 p-3 rounded-xl border border-primary/10">
-              <Checkbox id="primeira-vez" onCheckedChange={(checked) => {
-                if (checked) toast({ title: "🏆 Conquista!", description: "Os pais receberão uma notificação especial!" });
-              }} />
-              <div className="grid gap-1.5 leading-none">
-                <label
-                  htmlFor="primeira-vez"
-                  className="text-xs font-bold text-primary flex items-center gap-2 cursor-pointer"
-                >
-                  Marcar como Primeira Vez / Conquista
-                </label>
-                <p className="text-[9px] text-muted-foreground">Isso dispara uma comemoração no app dos pais.</p>
+          {/* Photo Upload Area */}
+          {albumFoto ? (
+            <div className="relative rounded-2xl overflow-hidden aspect-video bg-muted">
+              <img src={albumFoto} alt="Preview" className="w-full h-full object-cover" />
+              <button
+                onClick={() => { setAlbumFoto(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-all"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+              <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white/80 bg-black/40 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                Foto selecionada
               </div>
             </div>
-            <Button className="w-full rounded-xl h-12 font-bold shadow-lg shadow-primary/20">Publicar no Álbum</Button>
+          ) : (
+            <div
+              className="rounded-2xl border-2 border-dashed border-primary/20 bg-primary/3 hover:bg-primary/8 transition-all cursor-pointer group"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="flex flex-col items-center justify-center gap-3 py-10">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 group-hover:bg-primary/20 transition-all flex items-center justify-center">
+                  <ImagePlus className="h-8 w-8 text-primary" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-bold text-foreground">Adicionar Foto</p>
+                  <p className="text-[11px] text-muted-foreground">Câmera ou galeria do dispositivo</p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60 border border-primary/20 rounded-full px-3 py-1">📷 Câmera</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60 border border-primary/20 rounded-full px-3 py-1">🖼️ Galeria</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Category Dropdown */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Categoria da Atividade</Label>
+            <Select value={albumCategoria} onValueChange={setAlbumCategoria}>
+              <SelectTrigger className="rounded-xl h-12">
+                <SelectValue placeholder="Selecione o tipo de atividade..." />
+              </SelectTrigger>
+              <SelectContent>
+                {ACTIVITY_TYPES.map(a => (
+                  <SelectItem key={a.value} value={a.value}>
+                    <span className="flex items-center gap-2">
+                      <span>{a.emoji}</span>
+                      <span>{a.value}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Visual category chip */}
+            {albumCategoria && (() => {
+              const cat = ACTIVITY_TYPES.find(a => a.value === albumCategoria);
+              return cat ? (
+                <div className={cn("inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest rounded-full px-3 py-1.5 border", cat.color)}>
+                  <span>{cat.emoji}</span> {cat.value}
+                </div>
+              ) : null;
+            })()}
           </div>
+
+          {/* Caption */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Legenda / Descrição</Label>
+            <Textarea
+              placeholder="Descreva o momento especial..."
+              className="rounded-xl min-h-[80px] resize-none"
+              value={albumLegenda}
+              onChange={e => setAlbumLegenda(e.target.value)}
+            />
+          </div>
+
+          {/* Conquista Checkbox */}
+          <div
+            className={cn(
+              "flex items-start space-x-3 p-4 rounded-2xl border-2 cursor-pointer transition-all select-none",
+              albumConquista
+                ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-md shadow-amber-100"
+                : "bg-muted/20 border-dashed border-muted-foreground/20 hover:border-primary/30"
+            )}
+            onClick={() => setAlbumConquista(v => !v)}
+          >
+            <Checkbox
+              id="conquista-cb"
+              checked={albumConquista}
+              onCheckedChange={(v) => setAlbumConquista(!!v)}
+              className="mt-0.5"
+            />
+            <div className="grid gap-1 leading-none">
+              <label htmlFor="conquista-cb" className="text-sm font-black text-foreground cursor-pointer flex items-center gap-2">
+                {albumConquista ? '🏆' : '⭐'} Marcar como Primeira Vez / Conquista
+              </label>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Dispara uma <span className="font-bold text-amber-600">celebração especial</span> no app dos responsáveis com animação e notificação prioritária.
+              </p>
+            </div>
+          </div>
+
+          {/* Publish Button */}
+          <Button
+            className={cn(
+              "w-full rounded-2xl h-14 font-black text-base gap-3 shadow-xl transition-all",
+              albumConquista
+                ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 shadow-amber-400/30"
+                : "shadow-primary/20"
+            )}
+            onClick={handlePublishAlbum}
+            disabled={albumLoading}
+          >
+            {albumLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : albumConquista ? (
+              <><Sparkles className="h-5 w-5" /> Publicar Conquista! 🏆</>
+            ) : (
+              <><Camera className="h-5 w-5" /> Publicar no Álbum</>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
