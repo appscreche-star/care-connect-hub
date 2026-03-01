@@ -87,6 +87,7 @@ export interface Ocorrencia {
     descricao?: string;
     data_hora: string;
     notificado_pais: boolean;
+    detalhes?: any;
 }
 
 export interface ControleVacina {
