@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataProvider';
 import NotificationSheet from '@/components/NotificationSheet';
 import OnlineStatus from '@/components/OnlineStatus';
-import { CalendarDays, Camera, Package, Clock, LogOut } from 'lucide-react';
+import { CalendarDays, Camera, Package, Clock, LogOut, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -35,9 +35,9 @@ const PaisLayout = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b sticky top-0 bg-background z-10">
-        <div className="flex items-center justify-between px-4 h-14">
+        <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center text-lg font-bold text-primary border-2 border-primary/20">
+            <div className="h-11 w-11 rounded-2xl bg-primary/10 overflow-hidden flex items-center justify-center text-lg font-black text-primary border-2 border-primary/20 shadow-inner">
               {selectedAluno?.foto_url ? (
                 <img src={selectedAluno.foto_url} alt={selectedAluno.nome} className="h-full w-full object-cover" />
               ) : (
@@ -45,22 +45,25 @@ const PaisLayout = () => {
               )}
             </div>
             <div className="flex flex-col">
-              {alunos.length > 1 ? (
-                <select
-                  className="text-sm font-bold bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-foreground appearance-none pr-4"
-                  value={selectedAlunoId || ''}
-                  onChange={(e) => setSelectedAlunoId(e.target.value)}
-                >
-                  {alunos.map(a => (
-                    <option key={a.id} value={a.id}>{a.nome.split(' ')[0]}</option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-sm font-bold text-foreground">
-                  {selectedAluno?.nome.split(' ')[0] || 'Aluno'}
-                </p>
-              )}
-              <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                {alunos.length > 1 ? (
+                  <select
+                    className="text-base font-black bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-foreground appearance-none pr-4 leading-none"
+                    value={selectedAlunoId || ''}
+                    onChange={(e) => setSelectedAlunoId(e.target.value)}
+                  >
+                    {alunos.map(a => (
+                      <option key={a.id} value={a.id}>{a.nome.split(' ')[0]}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-base font-black text-foreground leading-none">
+                    {selectedAluno?.nome.split(' ')[0] || 'Aluno'}
+                  </p>
+                )}
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1 mt-0.5">
                 {humorAtual ? `${humorAtual.emoji || '😊'} ${humorAtual.humor || 'Bem'}` : '✨ Sem atualizações'}
               </p>
             </div>
@@ -68,14 +71,17 @@ const PaisLayout = () => {
           <div className="flex items-center gap-1">
             <OnlineStatus />
             <NotificationSheet />
-            <button onClick={() => { logout(); navigate('/login'); }} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-accent">
-              <LogOut className="h-5 w-5 text-muted-foreground" />
+            <button onClick={() => { logout(); navigate('/login'); }} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl hover:bg-accent transition-colors">
+              <LogOut className="h-5 w-5 text-muted-foreground/60" />
             </button>
           </div>
         </div>
-        <div className="px-4 pb-3">
-          <Button className="w-full rounded-xl h-11 bg-amber-500 hover:bg-amber-600 text-white font-semibold" onClick={handleEstouChegando}>
-            🚗 Estou Chegando!
+        <div className="px-4 pb-4">
+          <Button
+            className="w-full rounded-2xl h-12 bg-amber-500 hover:bg-amber-600 text-white font-black shadow-lg shadow-amber-500/20 transition-all active:scale-95 gap-2"
+            onClick={handleEstouChegando}
+          >
+            <MapPin className="h-4 w-4" /> Estou Chegando!
           </Button>
         </div>
       </header>
