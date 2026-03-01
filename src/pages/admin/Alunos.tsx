@@ -130,41 +130,144 @@ const Alunos = () => {
                         <p className="text-[10px] text-muted-foreground">Adicione pais ou tutores legais</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" className="rounded-lg h-8">Anexar Perfil</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg h-8"
+                      onClick={() => setFormData(p => ({
+                        ...p,
+                        responsaveis: [...(p.responsaveis || []), { nome: '', parentesco: '', financeiro: false }]
+                      }))}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar
+                    </Button>
                   </div>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-12 gap-2 items-end">
-                      <div className="col-span-12 md:col-span-5 space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nome do Responsável</Label>
-                        <Input placeholder="Nome completo" className="rounded-lg h-9 text-sm" />
+                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                    {formData.responsaveis?.map((resp, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-muted/20 p-3 rounded-xl relative group">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          onClick={() => setFormData(p => ({
+                            ...p,
+                            responsaveis: p.responsaveis?.filter((_, i) => i !== idx)
+                          }))}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                        <div className="col-span-12 md:col-span-5 space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nome do Responsável</Label>
+                          <Input
+                            value={resp.nome}
+                            onChange={e => {
+                              const newResps = [...(formData.responsaveis || [])];
+                              newResps[idx] = { ...newResps[idx], nome: e.target.value };
+                              setFormData(p => ({ ...p, responsaveis: newResps }));
+                            }}
+                            placeholder="Nome completo"
+                            className="rounded-lg h-9 text-sm"
+                          />
+                        </div>
+                        <div className="col-span-6 md:col-span-3 space-y-1">
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Vínculo</Label>
+                          <Input
+                            value={resp.parentesco}
+                            onChange={e => {
+                              const newResps = [...(formData.responsaveis || [])];
+                              newResps[idx] = { ...newResps[idx], parentesco: e.target.value };
+                              setFormData(p => ({ ...p, responsaveis: newResps }));
+                            }}
+                            placeholder="Mãe, Pai, Avó..."
+                            className="rounded-lg h-9 text-sm"
+                          />
+                        </div>
+                        <div className="col-span-6 md:col-span-4 flex items-center gap-2 h-9 border rounded-lg px-2 bg-background">
+                          <input
+                            type="checkbox"
+                            className="rounded border-primary h-3.5 w-3.5"
+                            id={`financeiro-${idx}`}
+                            checked={resp.financeiro}
+                            onChange={e => {
+                              const newResps = (formData.responsaveis || []).map((r, i) => ({
+                                ...r,
+                                financeiro: i === idx ? e.target.checked : r.financeiro
+                              }));
+                              setFormData(p => ({ ...p, responsaveis: newResps }));
+                            }}
+                          />
+                          <label htmlFor={`financeiro-${idx}`} className="text-xs font-semibold cursor-pointer select-none">Financeiro</label>
+                        </div>
                       </div>
-                      <div className="col-span-6 md:col-span-3 space-y-1">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Vínculo</Label>
-                        <Input placeholder="Mãe, Pai, Avó..." className="rounded-lg h-9 text-sm" />
-                      </div>
-                      <div className="col-span-6 md:col-span-4 flex items-center gap-2 h-9 border rounded-lg px-2 bg-muted/20">
-                        <input type="checkbox" className="rounded border-primary" id="financeiro" />
-                        <label htmlFor="financeiro" className="text-xs font-semibold cursor-pointer select-none">Financeiro</label>
-                      </div>
-                    </div>
+                    ))}
+                    {(!formData.responsaveis || formData.responsaveis.length === 0) && (
+                      <p className="text-center text-xs text-muted-foreground py-4 italic">Nenhum responsável adicionado.</p>
+                    )}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="retirada" className="space-y-4 mt-0">
-                  <div className="bg-destructive/5 p-4 rounded-2xl border border-destructive/10">
-                    <p className="text-xs font-bold text-destructive flex items-center gap-2 mb-2"><ShieldCheck className="h-4 w-4" /> Protocolo de Segurança</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed italic">Apenas as pessoas cadastradas abaixo podem retirar o aluno da instituição mediante apresentação de documento com foto.</p>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-dashed border-muted-foreground/20">
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground border-2 border-dashed border-muted-foreground/30">
-                        <Camera className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <Input placeholder="Nome da pessoa autorizada" className="rounded-lg h-9 text-sm" />
-                        <Input placeholder="RG / CPF" className="rounded-lg h-9 text-sm" />
-                      </div>
+                  <div className="bg-destructive/5 p-4 rounded-2xl border border-destructive/10 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-destructive flex items-center gap-2 mb-1"><ShieldCheck className="h-4 w-4" /> Protocolo de Segurança</p>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed italic">Apenas pessoas autorizadas podem retirar o aluno.</p>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg h-8 border-destructive/20 hover:bg-destructive/10 text-destructive"
+                      onClick={() => setFormData(p => ({
+                        ...p,
+                        autorizados: [...(p.autorizados || []), { nome: '', documento: '' }]
+                      }))}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Autorizar
+                    </Button>
+                  </div>
+                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                    {formData.autorizados?.map((aut, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-dashed border-muted-foreground/20 relative group">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setFormData(p => ({
+                            ...p,
+                            autorizados: p.autorizados?.filter((_, i) => i !== idx)
+                          }))}
+                        >
+                          <Trash2 className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                          <Camera className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          <Input
+                            value={aut.nome}
+                            onChange={e => {
+                              const newAuts = [...(formData.autorizados || [])];
+                              newAuts[idx] = { ...newAuts[idx], nome: e.target.value };
+                              setFormData(p => ({ ...p, autorizados: newAuts }));
+                            }}
+                            placeholder="Nome autorizado"
+                            className="rounded-lg h-8 text-sm bg-background/50"
+                          />
+                          <Input
+                            value={aut.documento}
+                            onChange={e => {
+                              const newAuts = [...(formData.autorizados || [])];
+                              newAuts[idx] = { ...newAuts[idx], documento: e.target.value };
+                              setFormData(p => ({ ...p, autorizados: newAuts }));
+                            }}
+                            placeholder="RG / CPF"
+                            className="rounded-lg h-8 text-sm bg-background/50"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {(!formData.autorizados || formData.autorizados.length === 0) && (
+                      <p className="text-center text-xs text-muted-foreground py-4 italic">Nenhuma autorização extra cadastrada.</p>
+                    )}
                   </div>
                 </TabsContent>
 

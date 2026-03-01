@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Turmas from "./pages/admin/Turmas";
+import TurmaDetalhes from "./pages/admin/TurmaDetalhes";
 import Alunos from "./pages/admin/Alunos";
 import Educadores from "./pages/admin/Educadores";
 import Saude from "./pages/admin/Saude";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/admin" element={<AdminLayout />}>
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="turmas" element={<Turmas />} />
+                <Route path="turmas/:id" element={<TurmaDetalhes />} />
                 <Route path="alunos" element={<Alunos />} />
                 <Route path="educadores" element={<Educadores />} />
                 <Route path="saude" element={<Saude />} />

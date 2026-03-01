@@ -7,13 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Loader2, Trash2, Users, BookOpen, AlertCircle, ShieldAlert, GraduationCap, Calendar, UserCheck } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GraduationCap, Users, UserCog, Eye, BookOpen, AlertCircle, ShieldAlert, Calendar, UserCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Progress } from "@/components/ui/progress";
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const Turmas = () => {
-  const { turmas, perfis, loading, addTurma, updateTurma, deleteTurma } = useData();
+  const navigate = useNavigate();
+  const { turmas, perfis, alunos, loading, addTurma, updateTurma, deleteTurma } = useData();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Turma>>({
     nome_turma: '',
@@ -137,7 +139,7 @@ const Turmas = () => {
                 <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground">Nenhuma turma configurada no momento.</TableCell></TableRow>
               ) : (
                 turmas.map(t => {
-                  const numAlunos = 0; // Seria calculado via relacionamento Real
+                  const numAlunos = alunos.filter(a => a.turma_id === t.id).length;
                   const occupancy = (numAlunos / (t.capacidade_maxima || 20)) * 100;
                   const professor = perfis.find(p => p.id === t.professor_id);
 
@@ -183,10 +185,19 @@ const Turmas = () => {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-primary/10 hover:text-primary transition-all shadow-inner bg-muted/20" onClick={() => handleEdit(t)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 text-primary hover:bg-primary/10 rounded-2xl transition-all"
+                            onClick={() => navigate(`/admin/turmas/${t.id}`)}
+                            title="Ver Alunos"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-muted/60 transition-all active:scale-95" onClick={() => handleEdit(t)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-destructive/10 hover:text-destructive transition-all shadow-inner bg-muted/20" onClick={() => deleteTurma(t.id)}>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-destructive/10 hover:text-destructive transition-all active:scale-95" onClick={() => deleteTurma(t.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
