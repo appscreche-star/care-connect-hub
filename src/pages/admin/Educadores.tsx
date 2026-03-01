@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Loader2, Trash2, Search, Filter, GraduationCap, Clock, Phone, Info } from 'lucide-react';
+import { Plus, Pencil, Loader2, Trash2, Search, Filter, GraduationCap, Clock, Phone, Info, Key } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -27,12 +27,14 @@ const Educadores = () => {
     especialidades: [],
     turno: 'integral',
     status: 'ativo',
-    contato_emergencia: ''
+    contato_emergencia: '',
+    username: '',
+    password: ''
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const resetForm = () => {
-    setFormData({ nome: '', email: '', role: 'Professor', cpf: '', formacao_academica: '', especialidades: [], turno: 'integral', status: 'ativo', contato_emergencia: '' });
+    setFormData({ nome: '', email: '', role: 'Professor', cpf: '', formacao_academica: '', especialidades: [], turno: 'integral', status: 'ativo', contato_emergencia: '', username: '', password: '' });
     setEditingId(null);
   };
 
@@ -117,7 +119,36 @@ const Educadores = () => {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2 border-t pt-4">
+
+              <div className="bg-muted/30 p-5 rounded-2xl border border-muted-foreground/10 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Key className="h-4 w-4 text-primary" />
+                  <span className="text-[11px] font-black uppercase text-foreground tracking-wider">Credenciais de Acesso</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Usuário (Login)</Label>
+                    <Input
+                      placeholder="usuario"
+                      value={formData.username}
+                      onChange={e => setFormData(p => ({ ...p, username: e.target.value }))}
+                      className="rounded-xl h-11 font-mono font-black text-primary bg-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Senha</Label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={e => setFormData(p => ({ ...p, password: e.target.value }))}
+                      className="rounded-xl h-11 font-bold bg-background"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t pt-2">
                 <Label>Formação Acadêmica / Especialidades</Label>
                 <Input value={Array.isArray(formData.especialidades) ? formData.especialidades.join(', ') : ''}
                   onChange={e => setFormData(p => ({ ...p, especialidades: e.target.value.split(',').map(s => s.trim()) }))}

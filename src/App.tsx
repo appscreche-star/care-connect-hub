@@ -25,6 +25,10 @@ import Mochila from "./pages/pais/Mochila";
 import Calendario from "./pages/pais/Calendario";
 import NotFound from "./pages/NotFound";
 
+import CalendarioAdmin from "./pages/admin/Calendario";
+import Responsaveis from "./pages/admin/Responsaveis";
+import CalendarioEducador from "./pages/educador/Calendario";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -45,6 +49,8 @@ const App = () => (
                 <Route path="alunos" element={<Alunos />} />
                 <Route path="aluno/:id" element={<PerfilAluno />} />
                 <Route path="educadores" element={<Educadores />} />
+                <Route path="responsaveis" element={<Responsaveis />} />
+                <Route path="calendario" element={<CalendarioAdmin />} />
                 <Route path="saude" element={<Saude />} />
                 <Route path="configuracoes" element={<Configuracoes />} />
               </Route>
@@ -52,6 +58,7 @@ const App = () => (
                 <Route path="home" element={<HomeEducador />} />
                 <Route path="turma/:id" element={<HomeTurma />} />
                 <Route path="aluno/:id" element={<PerfilAluno />} />
+                <Route path="calendario" element={<CalendarioEducador />} />
               </Route>
               <Route path="/pais" element={<PaisLayout />}>
                 <Route path="hoje" element={<Hoje />} />

@@ -38,6 +38,8 @@ export interface Perfil {
     auth_user_id?: string;
     nome: string;
     email?: string;
+    username?: string; // New field for custom login
+    password?: string; // New field for custom login
     telefone?: string;
     cpf?: string;
     rg?: string;
@@ -51,6 +53,18 @@ export interface Perfil {
     especialidades?: string[];
     contato_emergencia?: string;
     observacoes?: string;
+}
+
+export interface Evento {
+    id: string;
+    instituicao_id: string;
+    titulo: string;
+    descricao?: string;
+    data: string;
+    hora?: string;
+    tipo: 'reuniao' | 'festa' | 'feriado' | 'outro';
+    publico_alvo: 'todos' | 'pais' | 'professores';
+    created_at?: string;
 }
 
 export interface MedicamentoAgenda {
@@ -111,12 +125,14 @@ interface DataContextType {
     medicamentos: MedicamentoAgenda[];
     ocorrencias: Ocorrencia[];
     vacinas: ControleVacina[];
+    eventos: Evento[];
     loading: boolean;
     refreshTurmas: () => Promise<void>;
     refreshAlunos: () => Promise<void>;
     refreshNotificacoes: () => Promise<void>;
     refreshPerfis: () => Promise<void>;
     refreshSaude: () => Promise<void>;
+    refreshEventos: () => Promise<void>;
     addTurma: (turma: Partial<Turma>) => Promise<void>;
     deleteTurma: (id: string) => Promise<void>;
     updateTurma: (id: string, turma: Partial<Turma>) => Promise<void>;
@@ -127,6 +143,9 @@ interface DataContextType {
     addPerfil: (perfil: Omit<Perfil, 'id'>) => Promise<void>;
     updatePerfil: (id: string, perfil: Partial<Perfil>) => Promise<void>;
     deletePerfil: (id: string) => Promise<void>;
+    addEvento: (evento: Omit<Evento, 'id' | 'instituicao_id' | 'created_at'>) => Promise<void>;
+    updateEvento: (id: string, evento: Partial<Evento>) => Promise<void>;
+    deleteEvento: (id: string) => Promise<void>;
     addRegistro: (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'>) => Promise<void>;
     fetchRegistrosAluno: (alunoId: string) => Promise<void>;
     addMedicamento: (med: Omit<MedicamentoAgenda, 'id' | 'instituicao_id'>) => Promise<void>;
@@ -156,6 +175,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [medicamentos, setMedicamentos] = useState<MedicamentoAgenda[]>([]);
     const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>([]);
     const [vacinas, setVacinas] = useState<ControleVacina[]>([]);
+    const [eventos, setEventos] = useState<Evento[]>([]);
     const [selectedAlunoId, setSelectedAlunoId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -246,6 +266,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (ocsRes.error) console.error('Error fetching ocorrencias:', ocsRes.error);
         else setOcorrencias(ocsRes.data || []);
+    }, [instituicao?.id]);
+
+    const refreshEventos = useCallback(async () => {
+        if (!instituicao?.id) return;
+        const { data, error } = await supabase
+            .from('eventos')
+            .select('*')
+            .eq('instituicao_id', instituicao.id)
+            .order('data', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching eventos:', error);
+        } else {
+            setEventos(data || []);
+        }
     }, [instituicao?.id]);
 
     const addTurma = async (turma: Partial<Turma>) => {
@@ -429,6 +464,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         else refreshSaude();
     };
 
+    const addEvento = async (evento: Omit<Evento, 'id' | 'instituicao_id' | 'created_at'>) => {
+        if (!instituicao?.id) return;
+        const { error } = await supabase
+            .from('eventos')
+            .insert([{ ...evento, instituicao_id: instituicao.id }]);
+
+        if (error) {
+            toast({ title: '❌ Erro ao criar evento', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: '✅ Evento criado com sucesso!' });
+            refreshEventos();
+        }
+    };
+
+    const updateEvento = async (id: string, evento: Partial<Evento>) => {
+        const { error } = await supabase.from('eventos').update(evento).eq('id', id);
+        if (error) {
+            toast({ title: '❌ Erro ao atualizar evento', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: '✅ Evento atualizado!' });
+            refreshEventos();
+        }
+    };
+
+    const deleteEvento = async (id: string) => {
+        const { error } = await supabase.from('eventos').delete().eq('id', id);
+        if (error) {
+            toast({ title: '❌ Erro ao excluir evento', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: '✅ Evento excluído!' });
+            refreshEventos();
+        }
+    };
+
     const refreshVacinasAluno = async (alunoId: string) => {
         const { data, error } = await supabase.from('controle_vacinas').select('*').eq('aluno_id', alunoId);
         if (error) {
@@ -446,6 +515,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await refreshPerfis();
             await refreshAlunos();
             await refreshSaude();
+            await refreshEventos();
             setLoading(false);
         };
         init();
@@ -458,7 +528,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addTurma, deleteTurma, updateTurma, addAluno, updateAluno, deleteAluno,
             vincularAlunoTurma, addPerfil, updatePerfil, deletePerfil, addRegistro,
             fetchRegistrosAluno, addMedicamento, addOcorrencia, updateOcorrencia, toggleMedicamentoAtivo,
-            refreshVacinasAluno, selectedAlunoId, setSelectedAlunoId
+            refreshVacinasAluno, selectedAlunoId, setSelectedAlunoId,
+            eventos, refreshEventos, addEvento, updateEvento, deleteEvento
         }}>
             {children}
         </DataContext.Provider>
