@@ -207,22 +207,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const refreshAlunos = useCallback(async () => {
         if (!instituicao?.id || instituicao.id === DEFAULT_INST.id) return;
-        const { data, error } = await supabase
+        let query = supabase
             .from('alunos')
             .select('*')
-            .eq('instituicao_id', instituicao.id)
-            .order('nome');
+            .eq('instituicao_id', instituicao.id);
+
+        const { data, error } = await query.order('nome');
 
         if (error) {
             console.error('Error fetching alunos:', error);
         } else {
-            setAlunos(data || []);
-            if (data && data.length > 0) {
-                // Use functional update to avoid dependency on selectedAlunoId if we just want to set it once
-                setSelectedAlunoId(current => current || data[0].id);
+            let filteredData = data || [];
+
+            // Isola dados para responsáveis
+            if (user?.role === 'Responsavel') {
+                filteredData = filteredData.filter(aluno =>
+                    aluno.responsaveis?.some((r: any) => r.perfil_id === user.id)
+                );
+            }
+
+            setAlunos(filteredData);
+            if (filteredData.length > 0) {
+                setSelectedAlunoId(current => {
+                    // Se o aluno atual não está na lista filtrada, reseta para o primeiro
+                    if (current && !filteredData.find(a => a.id === current)) {
+                        return filteredData[0].id;
+                    }
+                    return current || filteredData[0].id;
+                });
+            } else {
+                setSelectedAlunoId(null);
             }
         }
-    }, [instituicao?.id]);
+    }, [instituicao?.id, user?.id, user?.role]);
 
     const refreshNotificacoes = useCallback(async () => {
         if (!instituicao?.id || instituicao.id === DEFAULT_INST.id) return;
@@ -262,27 +279,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             supabase.from('ocorrencias').select('*').eq('instituicao_id', instituicao.id).order('data_hora', { ascending: false })
         ]);
 
+        let filteredMeds = medsRes.data || [];
+        let filteredOcs = ocsRes.data || [];
+
+        // Isola dados para responsáveis
+        if (user?.role === 'Responsavel' && alunos.length > 0) {
+            const linkedIds = alunos.map(a => a.id);
+            filteredMeds = filteredMeds.filter(m => linkedIds.includes(m.aluno_id));
+            filteredOcs = filteredOcs.filter(o => linkedIds.includes(o.aluno_id));
+        }
+
         if (medsRes.error) console.error('Error fetching medicamentos:', medsRes.error);
-        else setMedicamentos(medsRes.data || []);
+        else setMedicamentos(filteredMeds);
 
         if (ocsRes.error) console.error('Error fetching ocorrencias:', ocsRes.error);
-        else setOcorrencias(ocsRes.data || []);
-    }, [instituicao?.id]);
+        else setOcorrencias(filteredOcs);
+    }, [instituicao?.id, user?.role, user?.id, alunos]);
 
     const refreshEventos = useCallback(async () => {
         if (!instituicao?.id) return;
-        const { data, error } = await supabase
+        let query = supabase
             .from('eventos')
             .select('*')
-            .eq('instituicao_id', instituicao.id)
-            .order('data', { ascending: true });
+            .eq('instituicao_id', instituicao.id);
+
+        if (user?.role === 'Responsavel') {
+            query = query.in('publico_alvo', ['todos', 'pais']);
+        } else if (user?.role === 'Professor') {
+            query = query.in('publico_alvo', ['todos', 'professores']);
+        }
+
+        const { data, error } = await query.order('data', { ascending: true });
 
         if (error) {
             console.error('Error fetching eventos:', error);
         } else {
             setEventos(data || []);
         }
-    }, [instituicao?.id]);
+    }, [instituicao?.id, user?.role]);
 
     const addTurma = async (turma: Partial<Turma>) => {
         if (!instituicao?.id) return;
@@ -608,12 +642,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await refreshNotificacoes();
             await refreshPerfis();
             await refreshAlunos();
-            await refreshSaude();
-            await refreshEventos();
             setLoading(false);
         };
         init();
-    }, [refreshTurmas, refreshNotificacoes, refreshPerfis, refreshAlunos, refreshSaude]);
+    }, [refreshTurmas, refreshNotificacoes, refreshPerfis, refreshAlunos]);
+
+    // Refresh health and events when students change or user role is available
+    useEffect(() => {
+        if (!loading) {
+            refreshSaude();
+            refreshEventos();
+        }
+    }, [alunos.length, user?.id, refreshSaude, refreshEventos, loading]);
 
     return (
         <DataContext.Provider value={{
