@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage } from 'lucide-react';
+import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 
 const moods = [
@@ -32,10 +32,123 @@ const ACTIVITY_TYPES = [
   { value: 'Outros', emoji: '⭐', color: 'text-slate-600 bg-slate-50 border-slate-200' },
 ];
 
+const OcorrenciaCard = ({ aluno, addOcorrencia }: { aluno: any, addOcorrencia: any }) => {
+  const [tipo, setTipo] = useState('');
+  const [horario, setHorario] = useState(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+  const [descricao, setDescricao] = useState('');
+  const [providencias, setProvidencias] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!tipo || !descricao) {
+      toast({ title: "⚠️ Campos obrigatórios", description: "Informe o tipo e a descrição.", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fullDesc = `${descricao}${providencias ? `\n\nProvidências: ${providencias}` : ''}\nHorário: ${horario}`;
+
+      await addOcorrencia({
+        aluno_id: aluno.id,
+        titulo: tipo,
+        descricao: fullDesc,
+        notificado_pais: false // Approval flow
+      });
+
+      setTipo('');
+      setDescricao('');
+      setProvidencias('');
+      toast({ title: "📨 Enviado", description: "Ocorrência enviada para validação da coordenação." });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="rounded-2xl border-none shadow-md bg-card border-l-4 border-l-destructive overflow-hidden animate-in slide-in-from-right duration-500 mb-6">
+      <CardHeader className="pb-2 bg-destructive/5">
+        <CardTitle className="text-base flex items-center gap-2 text-destructive">
+          <AlertTriangle className="h-5 w-5" /> Registro de Ocorrência
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Tipo de Incidente</Label>
+            <Select value={tipo} onValueChange={setTipo}>
+              <SelectTrigger className="rounded-xl h-11 border-destructive/20 focus:ring-destructive/30">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Queda / Escoriação">🤕 Queda / Escoriação</SelectItem>
+                <SelectItem value="Mordida">🦷 Mordida</SelectItem>
+                <SelectItem value="Indisposição / Febre">🌡️ Indisposição / Febre</SelectItem>
+                <SelectItem value="Conflito">🤝 Conflito entre Colegas</SelectItem>
+                <SelectItem value="Outros">⚠️ Outros</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Horário</Label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="time"
+                className="rounded-xl h-11 pl-9 border-destructive/20"
+                value={horario}
+                onChange={e => setHorario(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Descrição Detalhada</Label>
+          <Textarea
+            placeholder="O que aconteceu exatamente?"
+            className="rounded-xl min-h-[80px] border-destructive/20 focus:ring-destructive/30"
+            value={descricao}
+            onChange={e => setDescricao(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Providências Tomadas</Label>
+          <Input
+            placeholder="Gelo, limpeza, comunicado..."
+            className="rounded-xl h-11 border-destructive/20 focus:ring-destructive/30"
+            value={providencias}
+            onChange={e => setProvidencias(e.target.value)}
+          />
+        </div>
+
+        <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-start gap-3">
+          <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
+          <p className="text-[10px] text-amber-800 leading-tight">
+            <b>Fluxo de Segurança:</b> Este registro será enviado para a <b>Coordenação</b> validar antes de ser liberado para os pais.
+          </p>
+        </div>
+
+        <Button
+          variant="destructive"
+          className="w-full rounded-2xl h-12 font-black shadow-lg shadow-destructive/20 transition-all hover:scale-[1.02]"
+          onClick={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar para Coordenação"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
 const PerfilAluno = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { alunos, loading, addRegistro, registros, fetchRegistrosAluno } = useData();
+  const { alunos, loading, addRegistro, registros, fetchRegistrosAluno, addOcorrencia } = useData();
   const aluno = alunos.find(a => a.id === id);
 
   const [checkedIn, setCheckedIn] = useState(false);
@@ -527,61 +640,7 @@ const PerfilAluno = () => {
       </Card>
 
       {/* Registro de Ocorrências (Segurança) */}
-      <Card className="rounded-2xl border-none shadow-md bg-card border-l-4 border-l-destructive">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-4 w-4" /> Registro de Ocorrência
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-1">
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Tipo de Incidente</Label>
-              <Select onValueChange={(v) => console.log('Tipo incidente:', v)}>
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue placeholder="Selecione o tipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Queda">Queda / Escoriação</SelectItem>
-                  <SelectItem value="Mordida">Mordida</SelectItem>
-                  <SelectItem value="Indisposição">Indisposição / Febre</SelectItem>
-                  <SelectItem value="Conflito">Conflito entre Colegas</SelectItem>
-                  <SelectItem value="Outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição Detalhada</Label>
-              <Textarea id="incidente-desc" placeholder="Descreva o que houve e o horário..." className="rounded-xl min-h-[80px]" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Providências Tomadas</Label>
-              <Input id="incidente-prov" placeholder="Ex: Gelo aplicado, comunicado ao pai..." className="rounded-xl h-11" />
-            </div>
-          </div>
-
-          <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-start gap-3">
-            <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
-            <p className="text-[10px] text-amber-800 leading-tight">
-              <b>Fluxo de Segurança:</b> Este registro será enviado para a <b>Coordenação</b> validar antes de ser liberado para os pais.
-            </p>
-          </div>
-
-          <Button
-            variant="destructive"
-            className="w-full rounded-xl h-12 font-bold"
-            onClick={() => {
-              toast({ title: "📨 Enviado", description: "Aguardando aprovação da coordenação." });
-              handleAction('ocorrencia', {
-                status: 'pendente_coordenacao',
-                tipo: 'incidente'
-              }, "Ocorrência registrada");
-            }}
-          >
-            Enviar para Coordenação
-          </Button>
-        </CardContent>
-      </Card>
+      <OcorrenciaCard aluno={aluno} addOcorrencia={addOcorrencia} />
 
       {/* Recados */}
       <Card className="rounded-2xl">

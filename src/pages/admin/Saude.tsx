@@ -21,7 +21,7 @@ import { ptBR } from 'date-fns/locale';
 const Saude = () => {
     const {
         alunos, medicamentos, ocorrencias, addMedicamento, addOcorrencia,
-        toggleMedicamentoAtivo, refreshSaude, refreshVacinasAluno
+        toggleMedicamentoAtivo, refreshSaude, refreshVacinasAluno, updateOcorrencia
     } = useData();
 
     const [activeTab, setActiveTab] = useState('medicamentos');
@@ -281,6 +281,7 @@ const Saude = () => {
                                             <TableHead className="py-5 font-bold">Ocorrência</TableHead>
                                             <TableHead className="py-5 font-bold text-center">Status</TableHead>
                                             <TableHead className="py-5 font-bold">Data/Hora</TableHead>
+                                            <TableHead className="py-5 font-bold text-right pr-8">Ações</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -308,6 +309,17 @@ const Saude = () => {
                                                     </TableCell>
                                                     <TableCell className="py-4 text-xs font-medium text-muted-foreground">
                                                         {format(new Date(oc.data_hora), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                                    </TableCell>
+                                                    <TableCell className="py-4 text-right pr-8">
+                                                        {!oc.notificado_pais && (
+                                                            <Button
+                                                                size="sm"
+                                                                className="rounded-xl h-8 bg-emerald-600 hover:bg-emerald-700 gap-1 text-[10px] font-bold uppercase tracking-wider"
+                                                                onClick={() => updateOcorrencia(oc.id, { notificado_pais: true })}
+                                                            >
+                                                                <CheckCircle2 className="h-3 w-3" /> Validar e Enviar
+                                                            </Button>
+                                                        )}
                                                     </TableCell>
                                                 </TableRow>
                                             );

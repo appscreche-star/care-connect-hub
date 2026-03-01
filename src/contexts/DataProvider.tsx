@@ -133,6 +133,7 @@ interface DataContextType {
     addOcorrencia: (oc: Omit<Ocorrencia, 'id' | 'instituicao_id' | 'data_hora'>) => Promise<void>;
     toggleMedicamentoAtivo: (id: string, ativo: boolean) => Promise<void>;
     refreshVacinasAluno: (alunoId: string) => Promise<ControleVacina[]>;
+    updateOcorrencia: (id: string, updates: Partial<Ocorrencia>) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -397,9 +398,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const addOcorrencia = async (oc: Omit<Ocorrencia, 'id' | 'instituicao_id' | 'data_hora'>) => {
         if (!instituicao?.id) return;
         const { error } = await supabase.from('ocorrencias').insert([{ ...oc, instituicao_id: instituicao.id, professor_id: user?.id }]);
-        if (error) toast({ title: '❌ Erro ao registrar ocorrência', description: error.message, variant: 'destructive' });
-        else {
+        if (error) {
+            toast({ title: '❌ Erro ao registrar ocorrência', description: error.message, variant: 'destructive' });
+        } else {
             toast({ title: '✅ Ocorrência registrada!' });
+            refreshSaude();
+        }
+    };
+
+    const updateOcorrencia = async (id: string, updates: Partial<Ocorrencia>) => {
+        const { error } = await supabase.from('ocorrencias').update(updates).eq('id', id);
+        if (error) {
+            toast({ title: '❌ Erro ao atualizar ocorrência', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: '✅ Status da ocorrência atualizado!' });
             refreshSaude();
         }
     };
@@ -436,11 +448,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <DataContext.Provider value={{
             turmas, alunos, perfis, registros, notificacoes, medicamentos, ocorrencias, vacinas, loading,
             refreshTurmas, refreshAlunos, refreshNotificacoes, refreshPerfis, refreshSaude,
-            addTurma, deleteTurma, updateTurma,
-            addAluno, updateAluno, deleteAluno, vincularAlunoTurma,
-            addPerfil, updatePerfil, deletePerfil,
-            addRegistro, fetchRegistrosAluno,
-            addMedicamento, addOcorrencia, toggleMedicamentoAtivo, refreshVacinasAluno
+            addTurma, deleteTurma, updateTurma, addAluno, updateAluno, deleteAluno,
+            vincularAlunoTurma, addPerfil, updatePerfil, deletePerfil, addRegistro,
+            fetchRegistrosAluno, addMedicamento, addOcorrencia, updateOcorrencia, toggleMedicamentoAtivo,
+            refreshVacinasAluno
         }}>
             {children}
         </DataContext.Provider>

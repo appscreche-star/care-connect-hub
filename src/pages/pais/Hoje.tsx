@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useData } from '@/contexts/DataProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import { DoorOpen, Apple, Baby, Smile, UtensilsCrossed, Moon, MapPin, Loader2, MessageSquare } from 'lucide-react';
+import { DoorOpen, Apple, Baby, Smile, UtensilsCrossed, Moon, MapPin, Loader2, MessageSquare, AlertTriangle, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -14,6 +15,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   sono: Moon,
   recado: MessageSquare,
   chegando: MapPin,
+  ocorrencia: AlertTriangle,
 };
 
 const detailsMap: Record<string, (d: any) => string> = {
@@ -25,16 +27,19 @@ const detailsMap: Record<string, (d: any) => string> = {
   recado: (d) => `Recado: ${d.mensagem}`,
   mochila: (d) => `Solicitação de item: ${d.item}`,
   chegando: () => 'A caminho da creche 🚗',
+  ocorrencia: (d) => `Ocorrência: ${d.titulo} - ${d.descricao}`,
 };
 
 const Hoje = () => {
   const { user } = useAuth();
-  const { alunos, registros, fetchRegistrosAluno, loading, addRegistro } = useData();
+  const { alunos, registros, fetchRegistrosAluno, loading, addRegistro, ocorrencias, refreshSaude } = useData();
   const [targetAlunoId, setTargetAlunoId] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real flow, we'd lookup the student assigned to this parent
-    // For now, let's pick the first student we find to show data
+    refreshSaude();
+  }, [refreshSaude]);
+
+  useEffect(() => {
     if (alunos.length > 0 && !targetAlunoId) {
       setTargetAlunoId(alunos[0].id);
     }
@@ -45,6 +50,20 @@ const Hoje = () => {
       fetchRegistrosAluno(targetAlunoId);
     }
   }, [targetAlunoId, fetchRegistrosAluno]);
+
+  // Combine and sort logs
+  const timelineData = [
+    ...registros.map(r => ({ ...r, source: 'registro' })),
+    ...ocorrencias
+      .filter(o => o.aluno_id === targetAlunoId && o.notificado_pais)
+      .map(o => ({
+        id: o.id,
+        tipo_registro: 'ocorrencia',
+        detalhes: { titulo: o.titulo, descricao: o.descricao },
+        hora_registro: format(new Date(o.data_hora), "HH:mm"),
+        source: 'ocorrencia'
+      }))
+  ].sort((a, b) => b.hora_registro.localeCompare(a.hora_registro));
 
   const handleChegando = async () => {
     if (!targetAlunoId) return;
@@ -58,7 +77,7 @@ const Hoje = () => {
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
-  if (!targetAlunoId || registros.length === 0) {
+  if (!targetAlunoId || timelineData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
         <div className="text-6xl">🌅</div>
@@ -86,18 +105,26 @@ const Hoje = () => {
 
       <div className="relative pl-8">
         <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-border" />
-        {registros.map(r => {
+        {timelineData.map(r => {
           const Icon = iconMap[r.tipo_registro] || Smile;
           const details = detailsMap[r.tipo_registro]?.(r.detalhes) || JSON.stringify(r.detalhes);
 
           return (
             <div key={r.id} className="relative flex gap-4 pb-6">
               <div className={`absolute left-[-20px] h-8 w-8 rounded-full bg-background border-2 border-border flex items-center justify-center`}>
-                <Icon className="h-4 w-4 text-primary" />
+                <Icon className={cn("h-4 w-4", r.tipo_registro === 'ocorrencia' ? "text-destructive" : "text-primary")} />
               </div>
               <div className="ml-4 pt-1">
                 <p className="text-xs text-muted-foreground font-medium">{r.hora_registro.slice(0, 5)}</p>
-                <p className="text-sm text-foreground mt-0.5 font-medium">{details}</p>
+                <div className={cn(
+                  "rounded-2xl p-4 mt-1",
+                  r.tipo_registro === 'ocorrencia' ? "bg-destructive/5 border border-destructive/10" : "bg-muted/30"
+                )}>
+                  <p className={cn(
+                    "text-sm font-medium",
+                    r.tipo_registro === 'ocorrencia' ? "text-destructive" : "text-foreground"
+                  )}>{details}</p>
+                </div>
               </div>
             </div>
           );
