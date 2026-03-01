@@ -457,3 +457,4 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         </DataContext.Provider>
     );
 };
+// Sync marker for Lovable - 2026-03-01 01:13
