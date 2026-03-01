@@ -9,10 +9,18 @@ const EducadorLayout = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="h-14 border-b flex items-center justify-between px-4 sticky top-0 bg-background z-10">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground text-sm">{user?.nome}</span>
-          <span className="text-xs text-muted-foreground">• Berçário</span>
+      <header className="h-14 border-b flex items-center justify-between px-4 sticky top-0 bg-background z-50">
+        <div
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate('/educador/home')}
+        >
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white">
+            <span className="text-xs font-bold font-mono">CC</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-foreground text-xs leading-none">{user?.nome}</span>
+            <span className="text-[10px] text-muted-foreground leading-none mt-1">Portal do Educador</span>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <OnlineStatus />

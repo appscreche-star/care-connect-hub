@@ -4,11 +4,15 @@ import { useData, type RegistroDiario } from '@/contexts/DataProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 
 const moods = [
   { label: 'Feliz', icon: Smile, emoji: '😊' },
@@ -124,6 +128,85 @@ const PerfilAluno = () => {
         </CardContent>
       </Card>
 
+      {/* Saúde e Temperatura */}
+      <Card className="rounded-2xl border-none shadow-md overflow-hidden bg-card">
+        <CardHeader className="pb-2 border-b mb-3 bg-muted/20">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Thermometer className="h-4 w-4 text-primary" /> Saúde e Monitoramento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-2">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Temperatura (°C)</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="36.5"
+                  className="rounded-xl h-11 pl-10"
+                  onBlur={(e) => {
+                    if (e.target.value) handleAction('saude', { temperatura: e.target.value }, `Temperatura: ${e.target.value}°C`);
+                  }}
+                />
+                <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Medicação</Label>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="w-full h-11 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5">
+                    <Pill className="h-4 w-4" /> Administrar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-2xl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Administrar Medicação</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {aluno.medicamentos_uso_continuo
+                        ? `Medicação: ${aluno.medicamentos_uso_continuo}`
+                        : "Nenhum medicamento de uso contínuo registrado."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className="rounded-xl" onClick={() => handleAction('saude', { med: 'dose_ok' }, "Medicação realizada")}>Confirmar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Higiene */}
+      <Card className="rounded-2xl">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4" /> Higiene</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2 text-center">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Banho</Label>
+              <Toggle
+                className="w-full h-12 rounded-xl gap-2 border data-[state=on]:bg-emerald-500 data-[state=on]:text-white"
+                onPressedChange={(pressed) => handleAction('higiene', { item: 'banho', ok: pressed }, "Registro de Banho")}
+              >
+                <Droplets className="h-4 w-4" /> Realizado
+              </Toggle>
+            </div>
+            <div className="space-y-2 text-center">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Higiene Bucal</Label>
+              <Toggle
+                className="w-full h-12 rounded-xl gap-2 border data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                onPressedChange={(pressed) => handleAction('higiene', { item: 'bucal', ok: pressed }, "Higiene Bucal")}
+              >
+                <Sparkles className="h-4 w-4" /> Realizado
+              </Toggle>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Bem-estar */}
       <Card className="rounded-2xl">
         <CardHeader className="pb-2"><CardTitle className="text-base">Bem-estar</CardTitle></CardHeader>
@@ -174,14 +257,36 @@ const PerfilAluno = () => {
 
       {/* Evacuação */}
       <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Baby className="h-4 w-4" /> Evacuação</CardTitle></CardHeader>
-        <CardContent>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2"><Baby className="h-4 w-4" /> Evacuação</CardTitle>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-bold italic"><History className="h-3 w-3" /> Histórico</div>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
-            {['Fralda Seca', 'Xixi', 'Cocô Normal', 'Cocô Alterado'].map(opt => (
-              <Button key={opt} variant="outline" className="rounded-xl h-12 text-sm" onClick={() => handleAction('fralda', { status: opt }, `Fralda: ${opt}`)}>
-                {opt}
+            {[
+              { label: 'Xixi', style: 'border-yellow-200 bg-yellow-50 text-yellow-700' },
+              { label: 'Cocô Normal', style: 'border-amber-200 bg-amber-50 text-amber-900' },
+              { label: 'Cocô Alterado', style: 'border-destructive/20 bg-destructive/5 text-destructive' },
+              { label: 'Fralda Seca', style: 'border-emerald-200 bg-emerald-50 text-emerald-700' }
+            ].map(opt => (
+              <Button key={opt.label} variant="outline" className={cn("rounded-xl h-11 text-xs border", opt.style)} onClick={() => handleAction('fralda', { status: opt.label }, `Fralda: ${opt.label}`)}>
+                {opt.label}
               </Button>
             ))}
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="max-h-[100px] overflow-y-auto space-y-1">
+              {registros
+                .filter(r => r.tipo_registro === 'fralda' && new Date(r.created_at).toDateString() === new Date().toDateString())
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((r, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/40 text-[10px] border border-muted">
+                    <span className="font-bold opacity-70">{new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="font-bold">{r.detalhes?.status}</span>
+                  </div>
+                ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -212,16 +317,112 @@ const PerfilAluno = () => {
         </CardContent>
       </Card>
 
-      {/* Álbum */}
-      <Card className="rounded-2xl">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Camera className="h-4 w-4" /> Álbum / Atividades</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full rounded-xl h-12 gap-2" disabled><Camera className="h-4 w-4" /> Upload de Foto (Bloqueado)</Button>
-          <Input placeholder="Legenda da foto" className="rounded-xl" />
-          <div className="flex items-center gap-2">
-            <Checkbox id="primeira-vez" />
-            <label htmlFor="primeira-vez" className="text-sm text-foreground">Marcar como Primeira Vez / Conquista</label>
+      {/* Álbum Pedagógico */}
+      <Card className="rounded-2xl border-none shadow-md bg-card overflow-hidden">
+        <CardHeader className="pb-2 bg-primary/5">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Camera className="h-4 w-4 text-primary" /> Álbum / Atividades Pedagógicas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-4">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Tipo de Atividade</Label>
+              <Select onValueChange={(v) => handleAction('album', { tipo: v }, `Atividade: ${v}`)}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Selecione a categoria..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Atividade Motora">Atividade Motora</SelectItem>
+                  <SelectItem value="Hora da História">Hora da História</SelectItem>
+                  <SelectItem value="Recreio / Parquinho">Recreio / Parquinho</SelectItem>
+                  <SelectItem value="Artes / Pintura">Artes / Pintura</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          <div className="h-24 rounded-2xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-2 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-all">
+            <Camera className="h-6 w-6 text-muted-foreground opacity-50" />
+            <p className="text-[10px] font-bold text-muted-foreground uppercase">Tirar Foto ou Galeria</p>
+          </div>
+
+          <div className="space-y-3">
+            <Input placeholder="Legenda da conquista..." className="rounded-xl h-11" />
+            <div className="flex items-center space-x-2 bg-primary/5 p-3 rounded-xl border border-primary/10">
+              <Checkbox id="primeira-vez" onCheckedChange={(checked) => {
+                if (checked) toast({ title: "🏆 Conquista!", description: "Os pais receberão uma notificação especial!" });
+              }} />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="primeira-vez"
+                  className="text-xs font-bold text-primary flex items-center gap-2 cursor-pointer"
+                >
+                  Marcar como Primeira Vez / Conquista
+                </label>
+                <p className="text-[9px] text-muted-foreground">Isso dispara uma comemoração no app dos pais.</p>
+              </div>
+            </div>
+            <Button className="w-full rounded-xl h-12 font-bold shadow-lg shadow-primary/20">Publicar no Álbum</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Registro de Ocorrências (Segurança) */}
+      <Card className="rounded-2xl border-none shadow-md bg-card border-l-4 border-l-destructive">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-4 w-4" /> Registro de Ocorrência
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-1">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Tipo de Incidente</Label>
+              <Select onValueChange={(v) => console.log('Tipo incidente:', v)}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Selecione o tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Queda">Queda / Escoriação</SelectItem>
+                  <SelectItem value="Mordida">Mordida</SelectItem>
+                  <SelectItem value="Indisposição">Indisposição / Febre</SelectItem>
+                  <SelectItem value="Conflito">Conflito entre Colegas</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Descrição Detalhada</Label>
+              <Textarea id="incidente-desc" placeholder="Descreva o que houve e o horário..." className="rounded-xl min-h-[80px]" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Providências Tomadas</Label>
+              <Input id="incidente-prov" placeholder="Ex: Gelo aplicado, comunicado ao pai..." className="rounded-xl h-11" />
+            </div>
+          </div>
+
+          <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
+            <p className="text-[10px] text-amber-800 leading-tight">
+              <b>Fluxo de Segurança:</b> Este registro será enviado para a <b>Coordenação</b> validar antes de ser liberado para os pais.
+            </p>
+          </div>
+
+          <Button
+            variant="destructive"
+            className="w-full rounded-xl h-12 font-bold"
+            onClick={() => {
+              toast({ title: "📨 Enviado", description: "Aguardando aprovação da coordenação." });
+              handleAction('ocorrencia', {
+                status: 'pendente_coordenacao',
+                tipo: 'incidente'
+              }, "Ocorrência registrada");
+            }}
+          >
+            Enviar para Coordenação
+          </Button>
         </CardContent>
       </Card>
 

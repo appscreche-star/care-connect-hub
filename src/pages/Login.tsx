@@ -15,7 +15,7 @@ const Login = () => {
     const routes: Record<string, string> = {
       'Admin': '/admin/dashboard',
       'Coordenador': '/admin/dashboard',
-      'Professor': '/educador/turma',
+      'Professor': '/educador/home',
       'Responsavel': '/pais/hoje'
     };
     navigate(routes[role]);

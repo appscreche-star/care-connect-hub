@@ -91,6 +91,7 @@ export interface RegistroDiario {
     detalhes: any;
     data_registro: string;
     hora_registro: string;
+    created_at?: string;
 }
 
 export interface Notificacao {
@@ -126,7 +127,7 @@ interface DataContextType {
     addPerfil: (perfil: Omit<Perfil, 'id'>) => Promise<void>;
     updatePerfil: (id: string, perfil: Partial<Perfil>) => Promise<void>;
     deletePerfil: (id: string) => Promise<void>;
-    addRegistro: (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro'>) => Promise<void>;
+    addRegistro: (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'>) => Promise<void>;
     fetchRegistrosAluno: (alunoId: string) => Promise<void>;
     addMedicamento: (med: Omit<MedicamentoAgenda, 'id' | 'instituicao_id'>) => Promise<void>;
     addOcorrencia: (oc: Omit<Ocorrencia, 'id' | 'instituicao_id' | 'data_hora'>) => Promise<void>;
@@ -355,7 +356,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const addRegistro = async (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro'>) => {
+    const addRegistro = async (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'>) => {
         const { error } = await supabase.from('registros_diarios').insert([{
             ...registro,
             criado_por: user?.id

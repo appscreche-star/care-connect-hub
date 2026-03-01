@@ -15,6 +15,7 @@ import Educadores from "./pages/admin/Educadores";
 import Saude from "./pages/admin/Saude";
 import Configuracoes from "./pages/admin/Configuracoes";
 import EducadorLayout from "./layouts/EducadorLayout";
+import HomeEducador from "./pages/educador/HomeEducador";
 import HomeTurma from "./pages/educador/HomeTurma";
 import PerfilAluno from "./pages/educador/PerfilAluno";
 import PaisLayout from "./layouts/PaisLayout";
@@ -47,7 +48,8 @@ const App = () => (
                 <Route path="configuracoes" element={<Configuracoes />} />
               </Route>
               <Route path="/educador" element={<EducadorLayout />}>
-                <Route path="turma" element={<HomeTurma />} />
+                <Route path="home" element={<HomeEducador />} />
+                <Route path="turma/:id" element={<HomeTurma />} />
                 <Route path="aluno/:id" element={<PerfilAluno />} />
               </Route>
               <Route path="/pais" element={<PaisLayout />}>

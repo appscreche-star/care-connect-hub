@@ -94,20 +94,26 @@ export const usuarios: Usuario[] = [
 ];
 
 export const turmas: Turma[] = [
-  { id: '1', nome_turma: 'Berçário', instituicao_id: '1', periodo: 'Integral', capacidade_maxima: 10 },
-  { id: '2', nome_turma: 'Maternal I', instituicao_id: '1', periodo: 'Manhã', capacidade_maxima: 15 },
-  { id: '3', nome_turma: 'Maternal II', instituicao_id: '1', periodo: 'Tarde', capacidade_maxima: 20 },
+  { id: '1', nome_turma: 'Berçário I', instituicao_id: '1', periodo: 'Integral', capacidade_maxima: 10, professor_id: '2' },
+  { id: '2', nome_turma: 'Maternal II', instituicao_id: '1', periodo: 'Manhã', capacidade_maxima: 15, professor_id: '2' },
+  { id: '3', nome_turma: 'Jardim I', instituicao_id: '1', periodo: 'Tarde', capacidade_maxima: 20, professor_id: '2' },
 ];
 
 export const alunos: Aluno[] = [
-  { id: '1', nome: 'Joãozinho', data_nascimento: '2024-02-15', foto_url: '', turma_id: '1', idade: '2 anos', alergias: 'Amendoim' },
-  { id: '2', nome: 'Maria', data_nascimento: '2024-08-20', foto_url: '', turma_id: '1', idade: '1a 6m' },
-  { id: '3', nome: 'Pedro', data_nascimento: '2023-11-10', foto_url: '', turma_id: '2', idade: '2a 3m' },
-  { id: '4', nome: 'Ana', data_nascimento: '2024-06-05', foto_url: '', turma_id: '2', idade: '1a 8m', restricoes_alimentares: 'Lactose' },
+  { id: '1', nome: 'Joãozinho Silva', data_nascimento: '2024-02-15', foto_url: 'https://i.pravatar.cc/150?u=1', turma_id: '1', idade: '2 anos', alergias: 'Amendoim' },
+  { id: '2', nome: 'Maria Oliveira', data_nascimento: '2024-08-20', foto_url: 'https://i.pravatar.cc/150?u=2', turma_id: '1', idade: '1a 6m' },
+  { id: '3', nome: 'Pedro Henrique', data_nascimento: '2023-11-10', foto_url: 'https://i.pravatar.cc/150?u=3', turma_id: '2', idade: '2a 3m', restricoes_alimentares: 'Glúten' },
+  { id: '4', nome: 'Ana Clara', data_nascimento: '2024-06-05', foto_url: 'https://i.pravatar.cc/150?u=4', turma_id: '2', idade: '1a 8m', restricoes_alimentares: 'Lactose' },
+  { id: '5', nome: 'Lucas Gabriel', data_nascimento: '2024-01-10', foto_url: 'https://i.pravatar.cc/150?u=5', turma_id: '1', idade: '2a 1m' },
+  { id: '6', nome: 'Beatriz Santos', data_nascimento: '2023-09-22', foto_url: 'https://i.pravatar.cc/150?u=6', turma_id: '1', idade: '2a 5m', alergias: 'Picada de abelha' },
+  { id: '7', nome: 'Enzo Valentim', data_nascimento: '2024-03-30', foto_url: 'https://i.pravatar.cc/150?u=7', turma_id: '2', idade: '1a 11m' },
+  { id: '8', nome: 'Sophia Victoria', data_nascimento: '2024-11-05', foto_url: 'https://i.pravatar.cc/150?u=8', turma_id: '2', idade: '1a 3m' },
 ];
 
 export const registrosDiarios: RegistroDiario[] = [
   { id: '1', alunoId: '1', data: '2026-02-28', hora: '08:00', tipo: 'chegada', detalhes: 'Check-in realizado', cor: 'text-emerald-500', icone: 'DoorOpen' },
+  { id: '2', alunoId: '2', data: '2026-02-28', hora: '08:15', tipo: 'chegada', detalhes: 'Check-in realizado', cor: 'text-emerald-500', icone: 'DoorOpen' },
+  { id: '3', alunoId: '5', data: '2026-02-28', hora: '08:30', tipo: 'chegada', detalhes: 'Check-in realizado', cor: 'text-emerald-500', icone: 'DoorOpen' },
 ];
 
 export const notificacoes: Notificacao[] = [
