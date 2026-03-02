@@ -11,7 +11,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock, DoorOpen, Package } from 'lucide-react';
+import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock, DoorOpen, Package, Calendar } from 'lucide-react';
+import { format, subDays, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Toggle } from '@/components/ui/toggle';
 import ActionMenu from '@/components/ActionMenu';
 
@@ -176,6 +178,8 @@ const PerfilAluno = () => {
   const [albumConquista, setAlbumConquista] = useState(false);
   const [albumLoading, setAlbumLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showHistory, setShowHistory] = useState(false);
 
   const menuItems = [
     { id: 'presenca', label: 'Presença', icon: DoorOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -315,13 +319,10 @@ const PerfilAluno = () => {
         </div>
       )}
 
-      {/* ACTION GRID */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
         {/* Col 1: Feeding & Sleep */}
-        <div className="md:col-span-5 space-y-4">
-
-          {/* ALIMENTAÇÃO */}
+        <div className="md:col-span-4 space-y-4">
           <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
             <h3 className="text-[11px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
               <UtensilsCrossed className="h-3.5 w-3.5" /> Alimentação
@@ -348,9 +349,9 @@ const PerfilAluno = () => {
               ))}
             </div>
 
-            {/* Mamadeira – opcional */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
+            {/* Mamadeira UI mais intuitiva */}
+            <div className="pt-2">
+              <div className="flex items-center gap-2 mb-3">
                 <Toggle
                   pressed={mamadeiraEnabled}
                   onPressedChange={pressed => {
@@ -361,36 +362,62 @@ const PerfilAluno = () => {
                     }
                   }}
                   className={cn(
-                    "rounded-xl h-10 px-4 font-black text-[10px] uppercase transition-all",
-                    mamadeiraEnabled ? "bg-orange-100 text-orange-600 border-orange-200" : "bg-muted/30 text-muted-foreground border-transparent"
+                    "flex-1 h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all gap-2 border-2",
+                    mamadeiraEnabled
+                      ? "bg-amber-400 text-amber-950 border-amber-500 shadow-lg shadow-amber-100"
+                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-amber-50"
                   )}
                 >
+                  <Baby className={cn("h-4 w-4", mamadeiraEnabled ? "fill-amber-950" : "")} />
                   Mamadeira?
                 </Toggle>
               </div>
 
               {mamadeiraEnabled && (
-                <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      type="time"
-                      value={mamadeiraTime}
-                      onChange={e => setMamadeiraTime(e.target.value)}
-                      className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0"
-                    />
+                <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-3 bg-white border-2 border-orange-100 rounded-2xl px-4 py-2.5 shadow-sm">
+                      <Clock className="h-4 w-4 text-orange-500" />
+                      <div className="flex-1">
+                        <Label className="text-[8px] font-black text-orange-400 uppercase leading-none block mb-1">Horário</Label>
+                        <Input
+                          type="time"
+                          value={mamadeiraTime}
+                          onChange={e => setMamadeiraTime(e.target.value)}
+                          className="h-6 border-none bg-transparent focus-visible:ring-0 text-xs font-bold p-0"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 bg-white border-2 border-orange-100 rounded-2xl px-4 py-2.5 shadow-sm">
+                      <Package className="h-4 w-4 text-orange-500" />
+                      <div className="flex-1">
+                        <Label className="text-[8px] font-black text-orange-400 uppercase leading-none block mb-1">Volume (ML)</Label>
+                        <div className="flex items-center">
+                          <Input
+                            placeholder="000"
+                            type="number"
+                            value={mlBottle}
+                            onChange={e => setMlBottle(e.target.value)}
+                            className="h-6 border-none bg-transparent focus-visible:ring-0 text-xs font-bold p-0 flex-1"
+                          />
+                          <span className="text-[10px] font-black text-orange-200 ml-1">ml</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase">ML</span>
-                    <Input
-                      placeholder="0"
-                      type="number"
-                      value={mlBottle}
-                      onChange={e => setMlBottle(e.target.value)}
-                      onBlur={e => { if (e.target.value) handleAction('alimentacao', { ml: e.target.value, status: selectedFeeding || 'Mamadeira' }, ''); }}
-                      className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0 text-right"
-                    />
-                  </div>
+                  <Button
+                    className="w-full h-10 rounded-xl bg-orange-500 text-white font-black text-[10px] hover:bg-orange-600 shadow-md active:scale-[0.98]"
+                    onClick={() => {
+                      if (mlBottle) {
+                        handleAction('alimentacao', { ml: mlBottle, horario: mamadeiraTime, status: 'Mamadeira' }, 'Mamadeira registrada');
+                        setMlBottle('');
+                        setMamadeiraEnabled(false);
+                        toast({ title: "🍼 Mamadeira registrada!", description: `${mlBottle}ml às ${mamadeiraTime}` });
+                      }
+                    }}
+                  >
+                    CONFIRMAR MAMADEIRA
+                  </Button>
                 </div>
               )}
             </div>
@@ -410,7 +437,11 @@ const PerfilAluno = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSleepCount(c => Math.max(0, c - 1));
+                        setSleepCount(c => {
+                          const newCount = Math.max(0, c - 1);
+                          handleAction('sono', { status: 'reduzido', total_vezes: newCount }, 'Menos uma soneca');
+                          return newCount;
+                        });
                       }}
                       className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
                     >−</button>
@@ -418,8 +449,11 @@ const PerfilAluno = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleAction('sono', { status: 'dormiu', total_vezes: sleepCount + 1 }, '');
-                        setSleepCount(c => c + 1);
+                        setSleepCount(c => {
+                          const newCount = c + 1;
+                          handleAction('sono', { status: 'dormiu', total_vezes: newCount }, 'Nova soneca');
+                          return newCount;
+                        });
                       }}
                       className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
                     >+</button>
@@ -430,15 +464,15 @@ const PerfilAluno = () => {
                 size="lg"
                 className={cn(
                   "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90 shrink-0",
-                  sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20 text-white hover:bg-white/30"
+                  sleeping ? "bg-amber-400 text-indigo-900 hover:bg-amber-500" : "bg-white/20 text-white hover:bg-white/30"
                 )}
                 onClick={() => {
                   const newStatus = !sleeping;
                   setSleeping(newStatus);
-                  handleAction('sono', { status: newStatus ? 'dormiu' : 'acordou' }, '');
+                  handleAction('sono', { status: newStatus ? 'dormindo' : 'acordou' }, newStatus ? 'Dormindo' : 'Acordou');
                 }}
               >
-                <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-indigo-600" : "")} />
+                <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-current" : "")} />
               </Button>
             </div>
           </Card>
@@ -446,8 +480,6 @@ const PerfilAluno = () => {
 
         {/* Col 2: Hygiene & Mood */}
         <div className="md:col-span-4 space-y-4">
-
-          {/* HIGIENE */}
           <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
             <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Droplets className="h-3.5 w-3.5" /> Higiene
@@ -534,7 +566,7 @@ const PerfilAluno = () => {
         </div>
 
         {/* Col 3: Tools & Recados */}
-        <div className="md:col-span-3 space-y-4">
+        <div className="md:col-span-4 space-y-4">
           <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5 space-y-4">
             <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Ações Rápidas</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -551,6 +583,20 @@ const PerfilAluno = () => {
               >
                 <Camera className="h-5 w-5" />
                 <span className="text-[9px] font-black uppercase">Álbum</span>
+              </button>
+              <button
+                onClick={() => setShowHistory(true)}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50 transition-all active:scale-95"
+              >
+                <History className="h-5 w-5" />
+                <span className="text-[9px] font-black uppercase">Relatório</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('mochila')}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-slate-600 hover:border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+              >
+                <Package className="h-5 w-5" />
+                <span className="text-[9px] font-black uppercase">Mochila</span>
               </button>
             </div>
 
@@ -641,6 +687,105 @@ const PerfilAluno = () => {
 
       </div>
 
+      {/* MODAL DE HISTÓRICO / RELATÓRIO */}
+      <AlertDialog open={showHistory} onOpenChange={setShowHistory}>
+        <AlertDialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-gradient-to-br from-cyan-600 to-cyan-800 p-8 text-white relative">
+            <button onClick={() => setShowHistory(false)} className="absolute top-6 right-6 h-10 w-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm hover:bg-white/20 transition-all">
+              <XIcon className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-16 w-16 rounded-3xl bg-white/20 flex items-center justify-center">
+                <History className="h-8 w-8" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black tracking-tight">Relatório Diário</h2>
+                <p className="text-cyan-100 font-bold opacity-80 uppercase text-[10px] tracking-widest mt-1">Histórico completo de atividades</p>
+              </div>
+            </div>
+
+            {/* Seletor de Data Estilizado */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {[0, 1, 2, 3, 4, 5, 6].map(daysAgo => {
+                const date = subDays(new Date(), daysAgo);
+                const active = isSameDay(date, selectedDate);
+                return (
+                  <button
+                    key={daysAgo}
+                    onClick={() => setSelectedDate(date)}
+                    className={cn(
+                      "flex flex-col items-center min-w-[60px] py-3 rounded-2xl transition-all border-2",
+                      active ? "bg-white text-cyan-700 border-white shadow-lg scale-105" : "bg-white/10 text-white border-transparent hover:bg-white/20"
+                    )}
+                  >
+                    <span className="text-[10px] font-black uppercase opacity-60 mb-1">{format(date, 'eee', { locale: ptBR })}</span>
+                    <span className="text-lg font-black">{format(date, 'dd')}</span>
+                  </button>
+                );
+              })}
+              <div className="pl-2">
+                <Button variant="ghost" className="h-14 w-14 rounded-2xl bg-white/5 border-2 border-white/10 text-white hover:bg-white/10">
+                  <Calendar className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 max-h-[60vh] overflow-y-auto bg-slate-50/50">
+            <div className="space-y-6">
+              {registros.filter(r => r.created_at && isSameDay(new Date(r.created_at), selectedDate)).length === 0 ? (
+                <div className="py-20 text-center opacity-40">
+                  <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <History className="h-8 w-8" />
+                  </div>
+                  <p className="font-bold">Nenhum registro encontrado para esta data.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {registros
+                    .filter(r => r.created_at && isSameDay(new Date(r.created_at), selectedDate))
+                    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+                    .map((reg, idx) => (
+                      <div key={reg.id} className="flex gap-4 group">
+                        <div className="flex flex-col items-center shrink-0">
+                          <div className="h-10 w-10 rounded-2xl bg-white shadow-sm flex items-center justify-center border-2 border-border/40 text-indigo-500">
+                            {reg.tipo_registro === 'alimentacao' && <UtensilsCrossed className="h-4 w-4" />}
+                            {reg.tipo_registro === 'sono' && <MoonIcon className="h-4 w-4" />}
+                            {reg.tipo_registro === 'fralda' && <Droplets className="h-4 w-4" />}
+                            {reg.tipo_registro === 'bemestar' && <Smile className="h-4 w-4" />}
+                            {reg.tipo_registro === 'recado' && <MessageSquare className="h-4 w-4" />}
+                            {reg.tipo_registro === 'presenca' && <DoorOpen className="h-4 w-4" />}
+                          </div>
+                          {idx !== registros.length - 1 && <div className="w-0.5 grow bg-border/40 mt-2" />}
+                        </div>
+                        <div className="pb-6 grow">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">{reg.tipo_registro}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground/60">{reg.hora_registro}</span>
+                          </div>
+                          <div className="bg-white border-2 border-border/20 rounded-2xl p-4 shadow-sm group-hover:border-indigo-100 transition-colors">
+                            <p className="text-sm font-bold text-slate-700">
+                              {reg.tipo_registro === 'alimentacao' && `Alimentação: ${reg.detalhes?.status}${reg.detalhes?.ml ? ` (${reg.detalhes?.ml}ml)` : ''}`}
+                              {reg.tipo_registro === 'sono' && `Soneca: ${reg.detalhes?.status === 'dormindo' ? 'Iniciou' : 'Finalizou'} (${reg.detalhes?.total_vezes ?? ''}ª vez)`}
+                              {reg.tipo_registro === 'fralda' && `Troca de Fralda (${reg.detalhes?.tipo_saida}): ${reg.detalhes?.tipo}`}
+                              {reg.tipo_registro === 'bemestar' && `Humor: ${reg.detalhes?.humor} ${reg.detalhes?.emoji || ''}`}
+                              {reg.tipo_registro === 'recado' && `Recado: ${reg.detalhes?.mensagem}`}
+                              {reg.tipo_registro === 'presenca' && `Status: ${reg.detalhes?.status === 'entrada' ? 'Entrou na Creche' : 'Saiu da Creche'}`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="p-6 bg-white border-t border-border/40">
+            <Button onClick={() => setShowHistory(false)} className="w-full h-12 rounded-2xl bg-cyan-600 font-black shadow-lg">FECHAR RELATÓRIO</Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Overflow Modals (For complex actions) */}
       <AlertDialog open={activeTab === 'ocorrencia'} onOpenChange={(open) => !open && setActiveTab('')}>
         <AlertDialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
@@ -667,9 +812,33 @@ const PerfilAluno = () => {
                 <button onClick={() => setAlbumFoto(null)} className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-sm"><XIcon className="h-4 w-4" /></button>
               </div>
             ) : (
-              <div onClick={() => fileInputRef.current?.click()} className="h-40 rounded-3xl border-4 border-dashed border-indigo-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted transition-colors">
-                <ImagePlus className="h-8 w-8 text-indigo-300 mb-2" />
-                <p className="text-xs font-black text-muted-foreground uppercase opacity-60">Escolher Foto</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => {
+                    const input = fileInputRef.current;
+                    if (input) {
+                      input.setAttribute('capture', 'environment');
+                      input.click();
+                    }
+                  }}
+                  className="h-40 rounded-3xl border-4 border-dashed border-indigo-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-indigo-50 transition-colors group"
+                >
+                  <Camera className="h-8 w-8 text-indigo-400 mb-2 group-hover:scale-110 transition-transform" />
+                  <p className="text-xs font-black text-indigo-600 uppercase opacity-60">Abrir Câmera</p>
+                </button>
+                <button
+                  onClick={() => {
+                    const input = fileInputRef.current;
+                    if (input) {
+                      input.removeAttribute('capture');
+                      input.click();
+                    }
+                  }}
+                  className="h-40 rounded-3xl border-4 border-dashed border-indigo-100 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 transition-colors group"
+                >
+                  <FileImage className="h-8 w-8 text-slate-400 mb-2 group-hover:scale-110 transition-transform" />
+                  <p className="text-xs font-black text-slate-600 uppercase opacity-60">Ver Galeria</p>
+                </button>
               </div>
             )}
 

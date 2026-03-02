@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DoorOpen, Apple, Baby, Smile, UtensilsCrossed, Moon, MapPin, Loader2, MessageSquare, AlertTriangle, Clock, LayoutDashboard, History, Trophy, ChevronRight, Sparkles, Camera, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, subDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardCard from '@/components/DashboardCard';
@@ -42,6 +42,7 @@ const Hoje = () => {
   const { alunos, registros, fetchRegistrosAluno, loading, addRegistro, ocorrencias, refreshSaude, selectedAlunoId } = useData();
   const [celebration, setCelebration] = useState<{ open: boolean; titulo?: string; legenda?: string }>({ open: false });
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const menuItems: MenuItem[] = [
     { id: 'presenca', label: 'Presença', icon: DoorOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -68,26 +69,29 @@ const Hoje = () => {
   }, [selectedAlunoId, fetchRegistrosAluno]);
 
   // Process data for Dashboard
-  const albumRegistros = registros.filter(r => r.aluno_id === selectedAlunoId && r.tipo_registro === 'album');
+  // Process data for Dashboard - Filtered by selected date
+  const filteredRegistros = registros.filter(r => r.aluno_id === selectedAlunoId && r.created_at && isSameDay(new Date(r.created_at), selectedDate));
+  const filteredOcorrencias = ocorrencias.filter(o => o.aluno_id === selectedAlunoId && (o.notificado_pais || user?.role !== 'Responsavel') && isSameDay(new Date(o.data_hora), selectedDate));
+
+  const albumRegistros = filteredRegistros.filter(r => r.tipo_registro === 'album');
   const latestAlbum = albumRegistros.length > 0 ? albumRegistros[0] : null;
-  const latestAlimentacao = registros.filter(r => r.aluno_id === selectedAlunoId && r.tipo_registro === 'alimentacao')[0];
-  const latestSono = registros.filter(r => r.aluno_id === selectedAlunoId && r.tipo_registro === 'sono')[0];
-  const latestFralda = registros.filter(r => r.aluno_id === selectedAlunoId && r.tipo_registro === 'fralda')[0];
-  const activeOcorrencia = ocorrencias.filter(o => o.aluno_id === selectedAlunoId && o.notificado_pais)[0];
+  const latestAlimentacao = filteredRegistros.filter(r => r.tipo_registro === 'alimentacao')[0];
+  const latestSono = filteredRegistros.filter(r => r.tipo_registro === 'sono' && r.detalhes?.status === 'dormindo')[0];
+  const latestFralda = filteredRegistros.filter(r => r.tipo_registro === 'fralda')[0];
+  const activeOcorrencia = filteredOcorrencias[0];
 
   // Combine and sort logs for Timeline Tab
   const timelineData = [
-    ...registros.map(r => ({ ...r, source: 'registro' })),
-    ...ocorrencias
-      .filter(o => o.aluno_id === selectedAlunoId && o.notificado_pais)
-      .map(o => ({
-        id: o.id,
-        tipo_registro: 'ocorrencia',
-        detalhes: { titulo: o.titulo, descricao: o.descricao },
-        hora_registro: format(new Date(o.data_hora), "HH:mm"),
-        source: 'ocorrencia'
-      }))
-  ].sort((a, b) => b.hora_registro.localeCompare(a.hora_registro));
+    ...filteredRegistros.map(r => ({ ...r, source: 'registro' })),
+    ...filteredOcorrencias.map(o => ({
+      id: o.id,
+      tipo_registro: 'ocorrencia',
+      detalhes: { titulo: o.titulo, descricao: o.descricao },
+      hora_registro: format(new Date(o.data_hora), "HH:mm"),
+      source: 'ocorrencia',
+      created_at: o.data_hora
+    }))
+  ].sort((a, b) => (b.created_at || b.hora_registro).localeCompare(a.created_at || a.hora_registro));
 
   const handleChegando = async () => {
     if (!selectedAlunoId) return;
@@ -125,6 +129,32 @@ const Hoje = () => {
           </div>
         </div>
         {/* Removido botão redundante aqui conforme solicitado */}
+      </div>
+
+      {/* Seletor de Data (Calendário Horizontal) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-4 px-1 scrollbar-none">
+        {[0, 1, 2, 3, 4, 5, 6].map(daysAgo => {
+          const date = subDays(new Date(), daysAgo);
+          const active = isSameDay(date, selectedDate);
+          return (
+            <button
+              key={daysAgo}
+              onClick={() => setSelectedDate(date)}
+              className={cn(
+                "flex flex-col items-center min-w-[64px] py-4 rounded-3xl transition-all border-2",
+                active
+                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105"
+                  : "bg-card text-muted-foreground border-transparent hover:bg-muted/50"
+              )}
+            >
+              <span className="text-[10px] font-black uppercase opacity-60 mb-1">{format(date, 'eee', { locale: ptBR })}</span>
+              <span className="text-xl font-black">{format(date, 'dd')}</span>
+            </button>
+          );
+        })}
+        <Button variant="outline" className="h-16 w-16 rounded-3xl bg-card shrink-0 border-dashed">
+          <Calendar className="h-5 w-5 text-muted-foreground" />
+        </Button>
       </div>
 
       {activeOcorrencia && (
@@ -166,10 +196,10 @@ const Hoje = () => {
                   <span className="text-xs font-bold">Troca Fraldas</span>
                 </div>
                 <div className="flex gap-1">
-                  {registros.filter(r => r.tipo_registro === 'fralda').slice(0, 3).map(r => (
+                  {filteredRegistros.filter(r => r.tipo_registro === 'fralda').slice(0, 3).map(r => (
                     <Badge key={r.id} variant="outline" className="text-[9px] px-1.5 py-0 rounded-lg">{r.hora_registro}</Badge>
                   ))}
-                  {registros.filter(r => r.tipo_registro === 'fralda').length === 0 && <span className="text-[10px] text-muted-foreground">Pendente</span>}
+                  {filteredRegistros.filter(r => r.tipo_registro === 'fralda').length === 0 && <span className="text-[10px] text-muted-foreground">Pendente</span>}
                 </div>
               </div>
 
@@ -225,8 +255,8 @@ const Hoje = () => {
                 <div className="col-span-6 text-right">Consumo</div>
               </div>
 
-              {registros.filter(r => r.tipo_registro === 'alimentacao').length > 0 ? (
-                registros.filter(r => r.tipo_registro === 'alimentacao').map(r => (
+              {filteredRegistros.filter(r => r.tipo_registro === 'alimentacao').length > 0 ? (
+                filteredRegistros.filter(r => r.tipo_registro === 'alimentacao').map(r => (
                   <div key={r.id} className="grid grid-cols-12 items-center p-2.5 rounded-2xl border border-border/40 hover:bg-muted/30 transition-colors">
                     <div className="col-span-6">
                       <p className="text-xs font-bold leading-none">{r.detalhes?.refeicao || 'Alimentação'}</p>
@@ -279,8 +309,8 @@ const Hoje = () => {
               <MessageSquare className="h-3.5 w-3.5" /> Recados
             </h3>
             <div className="space-y-4 overflow-auto max-h-48 pr-2 custom-scrollbar">
-              {registros.filter(r => r.tipo_registro === 'recado').length > 0 ? (
-                registros.filter(r => r.tipo_registro === 'recado').map(r => (
+              {filteredRegistros.filter(r => r.tipo_registro === 'recado').length > 0 ? (
+                filteredRegistros.filter(r => r.tipo_registro === 'recado').map(r => (
                   <div key={r.id} className="bg-white/60 p-3 rounded-2xl border border-amber-100 shadow-sm">
                     <p className="text-[10px] font-bold text-amber-800 leading-relaxed italic">
                       "{r.detalhes?.mensagem}"
