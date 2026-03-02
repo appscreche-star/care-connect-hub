@@ -318,127 +318,131 @@ const PerfilAluno = () => {
       {/* ACTION GRID */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-        {/* ALIMENTAÇÃO */}
-        <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
-          <h3 className="text-[11px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <UtensilsCrossed className="h-3.5 w-3.5" /> Alimentação
-          </h3>
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {[
-              { label: 'Aceitou tudo', emoji: '🥗' },
-              { label: 'Aceitou metade', emoji: '🥣' },
-              { label: 'Recusou', emoji: '❌' }
-            ].map(opt => (
-              <button
-                key={opt.label}
-                onClick={() => { setSelectedFeeding(opt.label); handleAction('alimentacao', { status: opt.label, ml: mlBottle }, ''); }}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl text-[9px] font-black uppercase border-2 transition-all",
-                  selectedFeeding === opt.label
-                    ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200"
-                    : "bg-muted/30 text-muted-foreground border-transparent hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700"
-                )}
-              >
-                <span className="text-xl">{opt.emoji}</span>
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        {/* Col 1: Feeding & Sleep */}
+        <div className="md:col-span-5 space-y-4">
 
-          {/* Mamadeira – opcional */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Toggle
-                pressed={mamadeiraEnabled}
-                onPressedChange={pressed => {
-                  setMamadeiraEnabled(pressed);
-                  if (!pressed) {
-                    setMlBottle('');
-                    setMamadeiraTime('');
-                  }
-                }}
-                className={cn(
-                  "rounded-xl h-10 px-4 font-black text-[10px] uppercase transition-all",
-                  mamadeiraEnabled ? "bg-orange-100 text-orange-600 border-orange-200" : "bg-muted/30 text-muted-foreground border-transparent"
-                )}
-              >
-                Mamadeira?
-              </Toggle>
+          {/* ALIMENTAÇÃO */}
+          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
+            <h3 className="text-[11px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <UtensilsCrossed className="h-3.5 w-3.5" /> Alimentação
+            </h3>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[
+                { label: 'Aceitou tudo', emoji: '🥗' },
+                { label: 'Aceitou metade', emoji: '🥣' },
+                { label: 'Recusou', emoji: '❌' }
+              ].map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => { setSelectedFeeding(opt.label); handleAction('alimentacao', { status: opt.label, ml: mlBottle }, ''); }}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl text-[9px] font-black uppercase border-2 transition-all",
+                    selectedFeeding === opt.label
+                      ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200"
+                      : "bg-muted/30 text-muted-foreground border-transparent hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700"
+                  )}
+                >
+                  <span className="text-xl">{opt.emoji}</span>
+                  {opt.label}
+                </button>
+              ))}
             </div>
 
-            {mamadeiraEnabled && (
-              <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    type="time"
-                    value={mamadeiraTime}
-                    onChange={e => setMamadeiraTime(e.target.value)}
-                    className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0"
-                  />
-                </div>
-                <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase">ML</span>
-                  <Input
-                    placeholder="0"
-                    type="number"
-                    value={mlBottle}
-                    onChange={e => setMlBottle(e.target.value)}
-                    onBlur={e => { if (e.target.value) handleAction('alimentacao', { ml: e.target.value, status: selectedFeeding || 'Mamadeira' }, ''); }}
-                    className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0 text-right"
-                  />
-                </div>
+            {/* Mamadeira – opcional */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Toggle
+                  pressed={mamadeiraEnabled}
+                  onPressedChange={pressed => {
+                    setMamadeiraEnabled(pressed);
+                    if (!pressed) {
+                      setMlBottle('');
+                      setMamadeiraTime('');
+                    }
+                  }}
+                  className={cn(
+                    "rounded-xl h-10 px-4 font-black text-[10px] uppercase transition-all",
+                    mamadeiraEnabled ? "bg-orange-100 text-orange-600 border-orange-200" : "bg-muted/30 text-muted-foreground border-transparent"
+                  )}
+                >
+                  Mamadeira?
+                </Toggle>
               </div>
-            )}
-          </div>
-        </Card>
 
-        {/* CONTROLE DE SONO */}
-        <Card className="rounded-[2rem] border-none shadow-sm bg-indigo-500 p-5 text-white">
-          <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
-            <MoonIcon className="h-3.5 w-3.5" /> Dormiu?
-          </h3>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-xl font-black">{sleeping ? 'Sim' : 'Não'}</p>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-[10px] font-bold opacity-60 uppercase tracking-tighter">Dormiu hoje:</span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSleepCount(c => Math.max(0, c - 1));
-                    }}
-                    className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
-                  >−</button>
-                  <span className="text-sm font-black tabular-nums w-4 text-center">{sleepCount}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAction('sono', { status: 'dormiu', total_vezes: sleepCount + 1 }, '');
-                      setSleepCount(c => c + 1);
-                    }}
-                    className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
-                  >+</button>
+              {mamadeiraEnabled && (
+                <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="time"
+                      value={mamadeiraTime}
+                      onChange={e => setMamadeiraTime(e.target.value)}
+                      className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
+                    <span className="text-[10px] font-black text-muted-foreground uppercase">ML</span>
+                    <Input
+                      placeholder="0"
+                      type="number"
+                      value={mlBottle}
+                      onChange={e => setMlBottle(e.target.value)}
+                      onBlur={e => { if (e.target.value) handleAction('alimentacao', { ml: e.target.value, status: selectedFeeding || 'Mamadeira' }, ''); }}
+                      className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0 text-right"
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-            <Button
-              size="lg"
-              className={cn(
-                "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90 shrink-0",
-                sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20 text-white hover:bg-white/30"
               )}
-              onClick={() => {
-                const newStatus = !sleeping;
-                setSleeping(newStatus);
-                handleAction('sono', { status: newStatus ? 'dormiu' : 'acordou' }, '');
-              }}
-            >
-              <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-indigo-600" : "")} />
-            </Button>
-          </div>
-        </Card>
+            </div>
+          </Card>
+
+          {/* CONTROLE DE SONO */}
+          <Card className="rounded-[2rem] border-none shadow-sm bg-indigo-500 p-5 text-white">
+            <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
+              <MoonIcon className="h-3.5 w-3.5" /> Dormiu?
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <p className="text-xl font-black">{sleeping ? 'Sim' : 'Não'}</p>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-[10px] font-bold opacity-60 uppercase tracking-tighter">Dormiu hoje:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSleepCount(c => Math.max(0, c - 1));
+                      }}
+                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
+                    >−</button>
+                    <span className="text-sm font-black tabular-nums w-4 text-center">{sleepCount}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAction('sono', { status: 'dormiu', total_vezes: sleepCount + 1 }, '');
+                        setSleepCount(c => c + 1);
+                      }}
+                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
+                    >+</button>
+                  </div>
+                </div>
+              </div>
+              <Button
+                size="lg"
+                className={cn(
+                  "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90 shrink-0",
+                  sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20 text-white hover:bg-white/30"
+                )}
+                onClick={() => {
+                  const newStatus = !sleeping;
+                  setSleeping(newStatus);
+                  handleAction('sono', { status: newStatus ? 'dormiu' : 'acordou' }, '');
+                }}
+              >
+                <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-indigo-600" : "")} />
+              </Button>
+            </div>
+          </Card>
+        </div>
 
         {/* Col 2: Hygiene & Mood */}
         <div className="md:col-span-4 space-y-4">
