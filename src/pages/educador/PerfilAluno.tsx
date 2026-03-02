@@ -252,11 +252,17 @@ const PerfilAluno = () => {
     const lastMood = registros.find(r => r.tipo_registro === 'bemestar');
     if (lastMood) setSelectedMood(lastMood.detalhes?.humor);
 
-    const lastSleep = registros.find(r => r.tipo_registro === 'sono');
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const hoje = registros.filter(r => r.data_registro === today);
+
+    const lastSleep = hoje.find(r => r.tipo_registro === 'sono');
     if (lastSleep) setSleeping(lastSleep.detalhes?.status === 'dormindo');
-    const todaySleeps = registros.filter(r => r.tipo_registro === 'sono' && r.detalhes?.status === 'dormindo');
+
+    // Count both "dormindo" (start) and "dormiu" (counter increment)
+    const todaySleeps = hoje.filter(r => r.tipo_registro === 'sono' && (r.detalhes?.status === 'dormindo' || r.detalhes?.status === 'dormiu'));
     setSleepCount(todaySleeps.length);
-    const lastFeeding = registros.find(r => r.tipo_registro === 'alimentacao');
+
+    const lastFeeding = hoje.find(r => r.tipo_registro === 'alimentacao');
     if (lastFeeding) setSelectedFeeding(lastFeeding.detalhes?.status ?? null);
   }, [registros]);
 
@@ -431,32 +437,34 @@ const PerfilAluno = () => {
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <p className="text-xl font-black">{sleeping ? 'Sim' : 'Não'}</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[10px] font-bold opacity-60 uppercase tracking-tighter">Dormiu hoje:</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSleepCount(c => {
-                          const newCount = Math.max(0, c - 1);
-                          handleAction('sono', { status: 'reduzido', total_vezes: newCount }, 'Menos uma soneca');
-                          return newCount;
-                        });
-                      }}
-                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
-                    >−</button>
-                    <span className="text-sm font-black tabular-nums w-4 text-center">{sleepCount}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSleepCount(c => {
-                          const newCount = c + 1;
-                          handleAction('sono', { status: 'dormiu', total_vezes: newCount }, 'Nova soneca');
-                          return newCount;
-                        });
-                      }}
-                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
-                    >+</button>
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex items-center gap-2 bg-white/10 rounded-2xl px-3 py-2 w-fit">
+                    <span className="text-[9px] font-black uppercase opacity-70 tracking-tight">Sonecas:</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSleepCount(c => {
+                            const newCount = Math.max(0, c - 1);
+                            handleAction('sono', { status: 'reduzido', total_vezes: newCount }, 'Menos uma soneca');
+                            return newCount;
+                          });
+                        }}
+                        className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/40 transition-colors"
+                      >−</button>
+                      <span className="text-base font-black tabular-nums min-w-[12px] text-center">{sleepCount}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSleepCount(c => {
+                            const newCount = c + 1;
+                            handleAction('sono', { status: 'dormiu', total_vezes: newCount }, 'Nova soneca');
+                            return newCount;
+                          });
+                        }}
+                        className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/40 transition-colors"
+                      >+</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -733,7 +741,7 @@ const PerfilAluno = () => {
 
           <div className="p-8 max-h-[60vh] overflow-y-auto bg-slate-50/50">
             <div className="space-y-6">
-              {registros.filter(r => r.created_at && isSameDay(new Date(r.created_at), selectedDate)).length === 0 ? (
+              {registros.filter(r => r.data_registro === format(selectedDate, 'yyyy-MM-dd')).length === 0 ? (
                 <div className="py-20 text-center opacity-40">
                   <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                     <History className="h-8 w-8" />
@@ -743,8 +751,8 @@ const PerfilAluno = () => {
               ) : (
                 <div className="space-y-4">
                   {registros
-                    .filter(r => r.created_at && isSameDay(new Date(r.created_at), selectedDate))
-                    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+                    .filter(r => r.data_registro === format(selectedDate, 'yyyy-MM-dd'))
+                    .sort((a, b) => b.hora_registro.localeCompare(a.hora_registro))
                     .map((reg, idx) => (
                       <div key={reg.id} className="flex gap-4 group">
                         <div className="flex flex-col items-center shrink-0">

@@ -70,13 +70,14 @@ const Hoje = () => {
 
   // Process data for Dashboard
   // Process data for Dashboard - Filtered by selected date
-  const filteredRegistros = registros.filter(r => r.aluno_id === selectedAlunoId && r.created_at && isSameDay(new Date(r.created_at), selectedDate));
-  const filteredOcorrencias = ocorrencias.filter(o => o.aluno_id === selectedAlunoId && (o.notificado_pais || user?.role !== 'Responsavel') && isSameDay(new Date(o.data_hora), selectedDate));
+  const targetDate = format(selectedDate, 'yyyy-MM-dd');
+  const filteredRegistros = registros.filter(r => r.aluno_id === selectedAlunoId && r.data_registro === targetDate);
+  const filteredOcorrencias = ocorrencias.filter(o => o.aluno_id === selectedAlunoId && (o.notificado_pais || user?.role !== 'Responsavel') && o.data_hora.startsWith(targetDate));
 
   const albumRegistros = filteredRegistros.filter(r => r.tipo_registro === 'album');
   const latestAlbum = albumRegistros.length > 0 ? albumRegistros[0] : null;
   const latestAlimentacao = filteredRegistros.filter(r => r.tipo_registro === 'alimentacao')[0];
-  const latestSono = filteredRegistros.filter(r => r.tipo_registro === 'sono' && r.detalhes?.status === 'dormindo')[0];
+  const latestSono = filteredRegistros.filter(r => r.tipo_registro === 'sono' && (r.detalhes?.status === 'dormindo' || r.detalhes?.status === 'dormiu'))[0];
   const latestFralda = filteredRegistros.filter(r => r.tipo_registro === 'fralda')[0];
   const activeOcorrencia = filteredOcorrencias[0];
 

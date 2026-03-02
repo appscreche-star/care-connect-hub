@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { useAuth, DEFAULT_INST } from './AuthContext';
+import { format } from 'date-fns';
 
 export interface Turma {
     id: string;
@@ -529,8 +530,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const addRegistro = async (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'>) => {
+        const now = new Date();
         const { error } = await supabase.from('registros_diarios').insert([{
             ...registro,
+            data_registro: format(now, 'yyyy-MM-dd'),
+            hora_registro: format(now, 'HH:mm'),
             criado_por: user?.id
         }]);
 
