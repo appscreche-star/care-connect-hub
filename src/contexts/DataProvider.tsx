@@ -148,7 +148,7 @@ interface DataContextType {
     addEvento: (evento: Omit<Evento, 'id' | 'instituicao_id' | 'created_at'>) => Promise<void>;
     updateEvento: (id: string, evento: Partial<Evento>) => Promise<void>;
     deleteEvento: (id: string) => Promise<void>;
-    addRegistro: (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'>) => Promise<void>;
+    addRegistro: (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'> & { data_registro?: string }) => Promise<void>;
     fetchRegistrosAluno: (alunoId: string) => Promise<void>;
     addMedicamento: (med: Omit<MedicamentoAgenda, 'id' | 'instituicao_id'>) => Promise<void>;
     addOcorrencia: (oc: Omit<Ocorrencia, 'id' | 'instituicao_id' | 'data_hora'>) => Promise<void>;
@@ -529,13 +529,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const addRegistro = async (registro: Omit<RegistroDiario, 'id' | 'data_registro' | 'hora_registro' | 'created_at'>) => {
-        const now = new Date();
+    const addRegistro = async (registro: Omit<RegistroDiario, 'id' | 'created_at' | 'data_registro' | 'hora_registro'> & { data_registro?: string }) => {
         const { error } = await supabase.from('registros_diarios').insert([{
             ...registro,
-            data_registro: format(now, 'yyyy-MM-dd'),
-            hora_registro: format(now, 'HH:mm'),
-            criado_por: user?.id
+            data_registro: registro.data_registro || format(new Date(), 'yyyy-MM-dd'),
+            hora_registro: format(new Date(), 'HH:mm:ss')
         }]);
 
         if (error) {

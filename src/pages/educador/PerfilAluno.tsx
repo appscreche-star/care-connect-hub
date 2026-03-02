@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useData, type RegistroDiario } from '@/contexts/DataProvider';
 import { Button } from '@/components/ui/button';
@@ -6,16 +6,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, LogIn, LogOut, Smile, Meh, Moon as MoonIcon, Frown, UtensilsCrossed, Baby, ShirtIcon, Camera, MessageSquare, Pill, Check, Loader2, ShieldAlert, Thermometer, Droplets, Sparkles, Plus, History, AlertTriangle, ImagePlus, X as XIcon, FileImage, Clock, DoorOpen, Package, Calendar } from 'lucide-react';
-import { format, subDays, isSameDay } from 'date-fns';
+import {
+  ChevronLeft, Droplets, UtensilsCrossed, Moon as MoonIcon, AlertTriangle,
+  Camera, History, Check, Loader2, Thermometer, MessageSquare, Package, Smile,
+  ArrowLeft, LogIn, LogOut, Meh, Frown, Baby, ShirtIcon, Sparkles, Plus, ImagePlus,
+  X as XIcon, FileImage, Clock, DoorOpen, Calendar, Pill, ShieldAlert
+} from 'lucide-react';
+import { format, subDays, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Toggle } from '@/components/ui/toggle';
 import ActionMenu from '@/components/ActionMenu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
 
 const moods = [
   { label: 'Feliz', icon: Smile, emoji: '😊' },
@@ -150,25 +164,30 @@ const OcorrenciaCard = ({ aluno, addOcorrencia }: { aluno: any, addOcorrencia: a
 
 const PerfilAluno = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { alunos, loading, addRegistro, registros, fetchRegistrosAluno, addOcorrencia } = useData();
+  const { alunos, loading, registros, fetchRegistrosAluno, addRegistro, addOcorrencia } = useData();
   const aluno = alunos.find(a => a.id === id);
+
+  // Selected date from URL or default to today
+  const selectedDateStr = searchParams.get('date') || format(new Date(), 'yyyy-MM-dd');
+  const [selectedDate, setSelectedDate] = useState<Date>(parseISO(selectedDateStr));
 
   const [checkedIn, setCheckedIn] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [sleeping, setSleeping] = useState(false);
-
-  const [mlBottle, setMlBottle] = useState('');
-  const [tempOption, setTempOption] = useState<'normal' | 'febre' | null>(null);
-  const [recadoList, setRecadoList] = useState<string[]>([]);
-  const [mamadeiraEnabled, setMamadeiraEnabled] = useState(false);
-  const [mamadeiraTime, setMamadeiraTime] = useState('');
   const [selectedFeeding, setSelectedFeeding] = useState<string | null>(null);
-
-  // Hygiene counters & states
+  const [mlBottle, setMlBottle] = useState('');
+  const [mamadeiraTime, setMamadeiraTime] = useState('');
+  const [mamadeiraEnabled, setMamadeiraEnabled] = useState(false);
+  const [sleepCount, setSleepCount] = useState(0);
+  const [sleeping, setSleeping] = useState(false);
+  const [tempOption, setTempOption] = useState<'normal' | 'febre' | null>(null);
+  const [recado, setRecado] = useState('');
+  const [recadoList, setRecadoList] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const [xixi, setXixi] = useState({ count: 0, tipo: null as string | null });
   const [coco, setCoco] = useState({ count: 0, tipo: null as string | null });
-  const [sleepCount, setSleepCount] = useState(0);
 
   // Track last manual update time to avoid jumping/flickering
   const lastUpdateRef = useRef<Record<string, number>>({});
@@ -181,9 +200,6 @@ const PerfilAluno = () => {
   const [albumLegenda, setAlbumLegenda] = useState('');
   const [albumConquista, setAlbumConquista] = useState(false);
   const [albumLoading, setAlbumLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showHistory, setShowHistory] = useState(false);
 
   const menuItems = [
     { id: 'presenca', label: 'Presença', icon: DoorOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -223,6 +239,7 @@ const PerfilAluno = () => {
         legenda: albumLegenda,
         conquista: albumConquista,
       },
+      data_registro: format(selectedDate, 'yyyy-MM-dd')
     });
 
     if (albumConquista) {
@@ -242,7 +259,7 @@ const PerfilAluno = () => {
     setAlbumConquista(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     setAlbumLoading(false);
-  }, [aluno, albumFoto, albumCategoria, albumLegenda, albumConquista, addRegistro]);
+  }, [aluno, albumFoto, albumCategoria, albumLegenda, albumConquista, addRegistro, selectedDate]);
 
   useEffect(() => {
     if (id) fetchRegistrosAluno(id);
@@ -252,17 +269,33 @@ const PerfilAluno = () => {
     // Determine if we should sync based on ignore window
     const shouldSync = (key: string) => {
       const last = lastUpdateRef.current[key] || 0;
-      return Date.now() - last > IGNORE_SYNC_MS;
+      const ignoreRef = lastUpdateRef.current['all'] || 0;
+      const finalLast = Math.max(last, ignoreRef);
+      return Date.now() - finalLast > IGNORE_SYNC_MS;
     };
 
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const hoje = registros.filter(r => r.data_registro === today);
+    const targetDate = format(selectedDate, 'yyyy-MM-dd');
+    const records = [...registros].reverse(); // Get latest records first
+    const hoje = records.filter(r => r.data_registro === targetDate);
+
+    // Initial state cleanup if no records for this day
+    if (hoje.length === 0 && shouldSync('all')) {
+      setCheckedIn(false);
+      setSelectedMood(null);
+      setSelectedFeeding(null);
+      setSleepCount(0);
+      setSleeping(false);
+      setTempOption(null);
+      setRecadoList([]);
+      setXixi({ count: 0, tipo: null });
+      setCoco({ count: 0, tipo: null });
+    }
 
     // Basic logic to determine current status based on last registros
-    const lastCheckin = registros.find(r => r.tipo_registro === 'presenca');
+    const lastCheckin = records.find(r => r.tipo_registro === 'presenca');
     if (lastCheckin && shouldSync('presenca')) setCheckedIn(lastCheckin.detalhes?.status === 'entrada');
 
-    const lastMood = registros.find(r => r.tipo_registro === 'bemestar');
+    const lastMood = records.find(r => r.tipo_registro === 'bemestar');
     if (lastMood && shouldSync('bemestar')) setSelectedMood(lastMood.detalhes?.humor);
 
     const lastSleep = hoje.find(r => r.tipo_registro === 'sono');
@@ -306,9 +339,9 @@ const PerfilAluno = () => {
     // Sync quick notes
     if (shouldSync('recado')) {
       const todayRecados = hoje.filter(r => r.tipo_registro === 'recado');
-      setRecadoList(todayRecados.map(r => r.detalhes?.mensagem).filter(Boolean));
+      setRecadoList(todayRecados.map(r => r.detalhes?.mensagem).filter(Boolean).reverse());
     }
-  }, [registros]);
+  }, [registros, selectedDate]);
 
   if (loading || !aluno) {
     if (!aluno && !loading) return <div className="p-8 text-center"><p>Aluno não encontrado</p><Button variant="link" onClick={() => navigate(-1)}>Voltar</Button></div>;
@@ -317,7 +350,13 @@ const PerfilAluno = () => {
 
   const handleAction = async (tipo: string, detalhes: any, msg: string, syncKey?: string) => {
     if (syncKey) lastUpdateRef.current[syncKey] = Date.now();
-    await addRegistro({ aluno_id: aluno.id, tipo_registro: tipo, detalhes });
+    // Use the selected date from URL for all registrations
+    await addRegistro({
+      aluno_id: aluno.id,
+      tipo_registro: tipo,
+      detalhes,
+      data_registro: format(selectedDate, 'yyyy-MM-dd')
+    });
     await fetchRegistrosAluno(aluno.id);
   };
 

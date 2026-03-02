@@ -4,7 +4,12 @@ import { useData } from '@/contexts/DataProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Check, Moon, ShieldAlert, Users, ChevronLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Loader2, Check, Moon, ShieldAlert, Users, ChevronLeft, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +21,7 @@ const HomeTurma = () => {
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedAlunos, setSelectedAlunos] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const currentTurma = turmas.find(t => t.id === id);
   const turmaAlunos = currentTurma ? alunos.filter(a => a.turma_id === currentTurma.id) : [];
@@ -66,7 +72,7 @@ const HomeTurma = () => {
   return (
     <div className="space-y-6 pb-32">
       <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -86,20 +92,47 @@ const HomeTurma = () => {
               </div>
             </div>
           </div>
-          <Button
-            variant={selectionMode ? "default" : "outline"}
-            size="sm"
-            className={cn(
-              "rounded-[1.25rem] h-11 px-5 gap-2 font-bold transition-all duration-300 shadow-sm",
-              selectionMode ? "bg-primary shadow-primary/20 scale-105" : "hover:border-primary hover:text-primary"
-            )}
-            onClick={() => {
-              setSelectionMode(!selectionMode);
-              setSelectedAlunos([]);
-            }}
-          >
-            {selectionMode ? 'Concluir' : <><Users className="h-4 w-4" /> Seleção Múltipla</>}
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "rounded-[1.25rem] h-11 px-4 gap-2 font-bold border-2 transition-all hover:border-primary hover:text-primary",
+                    "bg-background shadow-sm"
+                  )}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  {format(selectedDate, "dd 'de' MMM", { locale: ptBR })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-[2rem] border-none shadow-2xl" align="end">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant={selectionMode ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "rounded-[1.25rem] h-11 px-5 gap-2 font-bold transition-all duration-300 shadow-sm",
+                selectionMode ? "bg-primary shadow-primary/20 scale-105" : "hover:border-primary hover:text-primary"
+              )}
+              onClick={() => {
+                setSelectionMode(!selectionMode);
+                setSelectedAlunos([]);
+              }}
+            >
+              {selectionMode ? 'Concluir' : <><Users className="h-4 w-4" /> Seleção Múltipla</>}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -123,7 +156,9 @@ const HomeTurma = () => {
                   "rounded-[2.5rem] border-none cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-sm hover:shadow-xl",
                   isSelected ? "ring-4 ring-primary bg-primary/5 scale-[0.98]" : "bg-card hover:-translate-y-1"
                 )}
-                onClick={() => selectionMode ? toggleAlunoSelection(a.id) : navigate(`/educador/aluno/${a.id}`)}
+                onClick={() => selectionMode
+                  ? toggleAlunoSelection(a.id)
+                  : navigate(`/educador/aluno/${a.id}?date=${format(selectedDate, 'yyyy-MM-dd')}`)}
               >
                 <CardContent className="p-5 flex flex-col items-center text-center gap-4">
                   <div className="relative">
@@ -194,14 +229,14 @@ const HomeTurma = () => {
             <Button
               size="lg"
               className="flex-1 rounded-[1.5rem] h-14 gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 font-bold border-none transition-all active:scale-95"
-              onClick={() => handleBatchAction('presenca', { status: 'entrada' }, 'Check-in')}
+              onClick={() => handleBatchAction('presenca', { status: 'entrada', data_registro: format(selectedDate, 'yyyy-MM-dd') }, 'Check-in')}
             >
               <Check className="h-5 w-5 stroke-[3px]" /> Check-in
             </Button>
             <Button
               size="lg"
               className="flex-1 rounded-[1.5rem] h-14 gap-2 bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/20 font-bold border-none transition-all active:scale-95"
-              onClick={() => handleBatchAction('sono', { status: 'dormindo' }, 'Soneca')}
+              onClick={() => handleBatchAction('sono', { status: 'dormindo', data_registro: format(selectedDate, 'yyyy-MM-dd') }, 'Soneca')}
             >
               <Moon className="h-5 w-5" /> Soneca
             </Button>
