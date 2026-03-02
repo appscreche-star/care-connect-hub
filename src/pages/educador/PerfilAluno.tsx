@@ -170,6 +170,10 @@ const PerfilAluno = () => {
   const [coco, setCoco] = useState({ count: 0, tipo: null as string | null });
   const [sleepCount, setSleepCount] = useState(0);
 
+  // Track last manual update time to avoid jumping/flickering
+  const lastUpdateRef = useRef<Record<string, number>>({});
+  const IGNORE_SYNC_MS = 2000; // Ignore server sync for 2s after manual action
+
   // Album state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [albumFoto, setAlbumFoto] = useState<string | null>(null);
@@ -245,25 +249,56 @@ const PerfilAluno = () => {
   }, [id, fetchRegistrosAluno]);
 
   useEffect(() => {
-    // Basic logic to determine current status based on last registros
-    const lastCheckin = registros.find(r => r.tipo_registro === 'presenca');
-    if (lastCheckin) setCheckedIn(lastCheckin.detalhes?.status === 'entrada');
-
-    const lastMood = registros.find(r => r.tipo_registro === 'bemestar');
-    if (lastMood) setSelectedMood(lastMood.detalhes?.humor);
+    // Determine if we should sync based on ignore window
+    const shouldSync = (key: string) => {
+      const last = lastUpdateRef.current[key] || 0;
+      return Date.now() - last > IGNORE_SYNC_MS;
+    };
 
     const today = format(new Date(), 'yyyy-MM-dd');
     const hoje = registros.filter(r => r.data_registro === today);
 
+    // Basic logic to determine current status based on last registros
+    const lastCheckin = registros.find(r => r.tipo_registro === 'presenca');
+    if (lastCheckin && shouldSync('presenca')) setCheckedIn(lastCheckin.detalhes?.status === 'entrada');
+
+    const lastMood = registros.find(r => r.tipo_registro === 'bemestar');
+    if (lastMood && shouldSync('bemestar')) setSelectedMood(lastMood.detalhes?.humor);
+
     const lastSleep = hoje.find(r => r.tipo_registro === 'sono');
-    if (lastSleep) setSleeping(lastSleep.detalhes?.status === 'dormindo');
+    if (lastSleep && shouldSync('sono_status')) setSleeping(lastSleep.detalhes?.status === 'dormindo');
 
     // Count both "dormindo" (start) and "dormiu" (counter increment)
-    const todaySleeps = hoje.filter(r => r.tipo_registro === 'sono' && (r.detalhes?.status === 'dormindo' || r.detalhes?.status === 'dormiu'));
-    setSleepCount(todaySleeps.length);
+    if (shouldSync('sono_count')) {
+      const todaySleeps = hoje.filter(r => r.tipo_registro === 'sono' && (r.detalhes?.status === 'dormindo' || r.detalhes?.status === 'dormiu'));
+      setSleepCount(todaySleeps.length);
+    }
 
     const lastFeeding = hoje.find(r => r.tipo_registro === 'alimentacao');
-    if (lastFeeding) setSelectedFeeding(lastFeeding.detalhes?.status ?? null);
+    if (lastFeeding && shouldSync('alimentacao')) {
+      // Fix: Don't reset if it's a bottle feeding entry unless it's a state change
+      if (lastFeeding.detalhes?.status !== 'Mamadeira') {
+        setSelectedFeeding(lastFeeding.detalhes?.status ?? null);
+      }
+    }
+
+    // Sync hygiene counts
+    if (shouldSync('higiene')) {
+      const xixiRecords = hoje.filter(r => r.tipo_registro === 'fralda' && r.detalhes?.tipo_saida === 'xixi');
+      const cocoRecords = hoje.filter(r => r.tipo_registro === 'fralda' && r.detalhes?.tipo_saida === 'coco');
+
+      const lastXixi = xixiRecords[0];
+      const lastCoco = cocoRecords[0];
+
+      setXixi({
+        count: xixiRecords.length,
+        tipo: lastXixi?.detalhes?.tipo ?? null
+      });
+      setCoco({
+        count: cocoRecords.length,
+        tipo: lastCoco?.detalhes?.tipo ?? null
+      });
+    }
   }, [registros]);
 
   if (loading || !aluno) {
@@ -271,7 +306,8 @@ const PerfilAluno = () => {
     return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  const handleAction = async (tipo: string, detalhes: any, msg: string) => {
+  const handleAction = async (tipo: string, detalhes: any, msg: string, syncKey?: string) => {
+    if (syncKey) lastUpdateRef.current[syncKey] = Date.now();
     await addRegistro({ aluno_id: aluno.id, tipo_registro: tipo, detalhes });
     await fetchRegistrosAluno(aluno.id);
   };
@@ -301,7 +337,11 @@ const PerfilAluno = () => {
 
         {/* Quick Presence Toggle */}
         <Button
-          onClick={() => handleAction('presenca', { status: checkedIn ? 'saida' : 'entrada' }, checkedIn ? 'Saída' : 'Entrada')}
+          onClick={() => {
+            const newStatus = !checkedIn;
+            setCheckedIn(newStatus);
+            handleAction('presenca', { status: newStatus ? 'entrada' : 'saida' }, newStatus ? 'Entrada' : 'Saída', 'presenca');
+          }}
           className={cn(
             "rounded-2xl h-12 px-6 font-black shadow-lg transition-all active:scale-95 gap-2",
             checkedIn ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20"
@@ -341,7 +381,10 @@ const PerfilAluno = () => {
               ].map(opt => (
                 <button
                   key={opt.label}
-                  onClick={() => { setSelectedFeeding(opt.label); handleAction('alimentacao', { status: opt.label, ml: mlBottle }, ''); }}
+                  onClick={() => {
+                    setSelectedFeeding(opt.label);
+                    handleAction('alimentacao', { status: opt.label, ml: mlBottle }, '', 'alimentacao');
+                  }}
                   className={cn(
                     "flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl text-[9px] font-black uppercase border-2 transition-all",
                     selectedFeeding === opt.label
@@ -415,7 +458,7 @@ const PerfilAluno = () => {
                     className="w-full h-10 rounded-xl bg-orange-500 text-white font-black text-[10px] hover:bg-orange-600 shadow-md active:scale-[0.98]"
                     onClick={() => {
                       if (mlBottle) {
-                        handleAction('alimentacao', { ml: mlBottle, horario: mamadeiraTime, status: 'Mamadeira' }, 'Mamadeira registrada');
+                        handleAction('alimentacao', { ml: mlBottle, horario: mamadeiraTime, status: 'Mamadeira' }, 'Mamadeira registrada', 'alimentacao');
                         setMlBottle('');
                         setMamadeiraEnabled(false);
                         toast({ title: "🍼 Mamadeira registrada!", description: `${mlBottle}ml às ${mamadeiraTime}` });
@@ -446,7 +489,7 @@ const PerfilAluno = () => {
                           e.stopPropagation();
                           setSleepCount(c => {
                             const newCount = Math.max(0, c - 1);
-                            handleAction('sono', { status: 'reduzido', total_vezes: newCount }, 'Menos uma soneca');
+                            handleAction('sono', { status: 'reduzido', total_vezes: newCount }, 'Menos uma soneca', 'sono_count');
                             return newCount;
                           });
                         }}
@@ -458,7 +501,7 @@ const PerfilAluno = () => {
                           e.stopPropagation();
                           setSleepCount(c => {
                             const newCount = c + 1;
-                            handleAction('sono', { status: 'dormiu', total_vezes: newCount }, 'Nova soneca');
+                            handleAction('sono', { status: 'dormiu', total_vezes: newCount }, 'Nova soneca', 'sono_count');
                             return newCount;
                           });
                         }}
@@ -477,7 +520,7 @@ const PerfilAluno = () => {
                 onClick={() => {
                   const newStatus = !sleeping;
                   setSleeping(newStatus);
-                  handleAction('sono', { status: newStatus ? 'dormindo' : 'acordou' }, newStatus ? 'Dormindo' : 'Acordou');
+                  handleAction('sono', { status: newStatus ? 'dormindo' : 'acordou' }, newStatus ? 'Dormindo' : 'Acordou', 'sono_status');
                 }}
               >
                 <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-current" : "")} />
@@ -499,16 +542,29 @@ const PerfilAluno = () => {
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-1 bg-muted/30 rounded-2xl flex flex-col items-center justify-center py-2 gap-1">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => setXixi(s => ({ ...s, count: Math.max(0, s.count - 1) }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">−</button>
+                    <button
+                      onClick={() => {
+                        handleAction('fralda', { tipo_saida: 'xixi', tipo: xixi.tipo || 'Normal', status: 'reduzido' }, 'Removido Xixi', 'higiene');
+                      }}
+                      className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted"
+                    >−</button>
                     <span className="text-lg font-black tabular-nums w-5 text-center">{xixi.count}</span>
-                    <button onClick={() => setXixi(s => ({ ...s, count: s.count + 1 }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">+</button>
+                    <button
+                      onClick={() => {
+                        handleAction('fralda', { tipo_saida: 'xixi', tipo: xixi.tipo || 'Normal', status: 'confirmado' }, 'Registrado Xixi', 'higiene');
+                      }}
+                      className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted"
+                    >+</button>
                   </div>
                   <span className="text-[9px] text-muted-foreground font-bold uppercase">{xixi.count === 1 ? 'vez' : 'vezes'}</span>
                 </div>
                 {['Normal', 'Alterado'].map(tipo => (
                   <button
                     key={tipo}
-                    onClick={() => { setXixi(s => ({ ...s, tipo })); handleAction('fralda', { tipo_saida: 'xixi', tipo, vezes: xixi.count }, ''); }}
+                    onClick={() => {
+                      setXixi(s => ({ ...s, tipo }));
+                      handleAction('fralda', { tipo_saida: 'xixi', tipo, vezes: xixi.count }, '', 'higiene');
+                    }}
                     className={cn(
                       "rounded-2xl py-2 text-[10px] font-black uppercase border-2 transition-all",
                       xixi.tipo === tipo
@@ -526,16 +582,29 @@ const PerfilAluno = () => {
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-1 bg-muted/30 rounded-2xl flex flex-col items-center justify-center py-2 gap-1">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => setCoco(s => ({ ...s, count: Math.max(0, s.count - 1) }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">−</button>
+                    <button
+                      onClick={() => {
+                        handleAction('fralda', { tipo_saida: 'coco', tipo: coco.tipo || 'Normal', status: 'reduzido' }, 'Removido Cocô', 'higiene');
+                      }}
+                      className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted"
+                    >−</button>
                     <span className="text-lg font-black tabular-nums w-5 text-center">{coco.count}</span>
-                    <button onClick={() => setCoco(s => ({ ...s, count: s.count + 1 }))} className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted">+</button>
+                    <button
+                      onClick={() => {
+                        handleAction('fralda', { tipo_saida: 'coco', tipo: coco.tipo || 'Normal', status: 'confirmado' }, 'Registrado Cocô', 'higiene');
+                      }}
+                      className="h-5 w-5 rounded-full bg-background border flex items-center justify-center text-xs font-black hover:bg-muted"
+                    >+</button>
                   </div>
                   <span className="text-[9px] text-muted-foreground font-bold uppercase">{coco.count === 1 ? 'vez' : 'vezes'}</span>
                 </div>
                 {['Normal', 'Alterado'].map(tipo => (
                   <button
                     key={tipo}
-                    onClick={() => { setCoco(s => ({ ...s, tipo })); handleAction('fralda', { tipo_saida: 'coco', tipo, vezes: coco.count }, ''); }}
+                    onClick={() => {
+                      setCoco(s => ({ ...s, tipo }));
+                      handleAction('fralda', { tipo_saida: 'coco', tipo, vezes: coco.count }, '', 'higiene');
+                    }}
                     className={cn(
                       "rounded-2xl py-2 text-[10px] font-black uppercase border-2 transition-all",
                       coco.tipo === tipo
@@ -557,7 +626,10 @@ const PerfilAluno = () => {
               {moods.map(m => (
                 <button
                   key={m.label}
-                  onClick={() => { setSelectedMood(m.label); handleAction('bemestar', { humor: m.label, emoji: m.emoji }, ''); }}
+                  onClick={() => {
+                    setSelectedMood(m.label);
+                    handleAction('bemestar', { humor: m.label, emoji: m.emoji }, '', 'bemestar');
+                  }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-black border-2 transition-all text-left",
                     selectedMood === m.label
@@ -618,7 +690,7 @@ const PerfilAluno = () => {
                 <button
                   onClick={() => {
                     setTempOption('normal');
-                    handleAction('saude', { status: 'Normal', temperatura: '36.5' }, '');
+                    handleAction('saude', { status: 'Normal', temperatura: '36.5' }, '', 'temperatura');
                   }}
                   className={cn(
                     "rounded-xl py-2 text-[10px] font-black uppercase border-2 transition-all",
@@ -628,7 +700,9 @@ const PerfilAluno = () => {
                   Normal
                 </button>
                 <button
-                  onClick={() => setTempOption('febre')}
+                  onClick={() => {
+                    setTempOption('febre');
+                  }}
                   className={cn(
                     "rounded-xl py-2 text-[10px] font-black uppercase border-2 transition-all",
                     tempOption === 'febre' ? "bg-rose-500 text-white border-rose-500 shadow-md" : "border-border/40 text-muted-foreground hover:bg-muted"
@@ -646,7 +720,7 @@ const PerfilAluno = () => {
                     placeholder="38.5"
                     className="h-6 border-none bg-transparent focus:ring-0 text-xs font-bold text-rose-900 p-0 text-right"
                     onBlur={e => {
-                      if (e.target.value) handleAction('saude', { status: 'Febre', temperatura: e.target.value }, '');
+                      if (e.target.value) handleAction('saude', { status: 'Febre', temperatura: e.target.value }, '', 'temperatura');
                     }}
                   />
                 </div>
@@ -695,7 +769,7 @@ const PerfilAluno = () => {
 
       </div>
 
-      {/* MODAL DE HISTÓRICO / RELATÓRIO */}
+      {/* RELATÓRIO / HISTÓRICO MODAL */}
       <AlertDialog open={showHistory} onOpenChange={setShowHistory}>
         <AlertDialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
           <div className="bg-gradient-to-br from-cyan-600 to-cyan-800 p-8 text-white relative">
@@ -712,7 +786,6 @@ const PerfilAluno = () => {
               </div>
             </div>
 
-            {/* Seletor de Data Estilizado */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
               {[0, 1, 2, 3, 4, 5, 6].map(daysAgo => {
                 const date = subDays(new Date(), daysAgo);
@@ -763,6 +836,7 @@ const PerfilAluno = () => {
                             {reg.tipo_registro === 'bemestar' && <Smile className="h-4 w-4" />}
                             {reg.tipo_registro === 'recado' && <MessageSquare className="h-4 w-4" />}
                             {reg.tipo_registro === 'presenca' && <DoorOpen className="h-4 w-4" />}
+                            {reg.tipo_registro === 'mochila' && <Package className="h-4 w-4" />}
                           </div>
                           {idx !== registros.length - 1 && <div className="w-0.5 grow bg-border/40 mt-2" />}
                         </div>
@@ -779,6 +853,7 @@ const PerfilAluno = () => {
                               {reg.tipo_registro === 'bemestar' && `Humor: ${reg.detalhes?.humor} ${reg.detalhes?.emoji || ''}`}
                               {reg.tipo_registro === 'recado' && `Recado: ${reg.detalhes?.mensagem}`}
                               {reg.tipo_registro === 'presenca' && `Status: ${reg.detalhes?.status === 'entrada' ? 'Entrou na Creche' : 'Saiu da Creche'}`}
+                              {reg.tipo_registro === 'mochila' && `Mochila: Solicitação de ${reg.detalhes?.item}`}
                             </p>
                           </div>
                         </div>
@@ -794,7 +869,7 @@ const PerfilAluno = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Overflow Modals (For complex actions) */}
+      {/* OUTROS MODAIS */}
       <AlertDialog open={activeTab === 'ocorrencia'} onOpenChange={(open) => !open && setActiveTab('')}>
         <AlertDialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
           <OcorrenciaCard aluno={aluno} addOcorrencia={async (data: any) => {
@@ -811,9 +886,7 @@ const PerfilAluno = () => {
               <h3 className="text-lg font-black text-indigo-600 flex items-center gap-2"><Camera className="h-5 w-5" /> Publicar no Álbum</h3>
               <button onClick={() => setActiveTab('')} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"><XIcon className="h-4 w-4" /></button>
             </div>
-
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-
             {albumFoto ? (
               <div className="relative rounded-3xl overflow-hidden aspect-video shadow-inner ring-1 ring-border">
                 <img src={albumFoto} className="w-full h-full object-cover" />
@@ -849,7 +922,6 @@ const PerfilAluno = () => {
                 </button>
               </div>
             )}
-
             <div className="space-y-4">
               <Select value={albumCategoria} onValueChange={setAlbumCategoria}>
                 <SelectTrigger className="rounded-2xl h-12 border-none bg-muted shadow-inner font-bold"><SelectValue placeholder="Categoria..." /></SelectTrigger>
@@ -864,6 +936,44 @@ const PerfilAluno = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={activeTab === 'mochila'} onOpenChange={(open) => !open && setActiveTab('')}>
+        <AlertDialogContent className="max-w-md rounded-[2.5rem] p-6 border-none shadow-2xl">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-600 flex items-center gap-2"><Package className="h-5 w-5" /> Reposição / Mochila</h3>
+              <button onClick={() => setActiveTab('')} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"><XIcon className="h-4 w-4" /></button>
+            </div>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-relaxed">
+              Marque os itens que estão faltando ou precisam de reposição na mochila do aluno.
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { label: 'Fraldas', icon: Baby },
+                { label: 'Lenço Umedecido', icon: Droplets },
+                { label: 'Troca de Roupa', icon: ShirtIcon },
+                { label: 'Pomada', icon: Pill },
+                { label: 'Leite / Fórmula', icon: UtensilsCrossed }
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    handleAction('mochila', { item: item.label, status: 'pendente' }, `Pedido de ${item.label}`, 'mochila');
+                    toast({ title: `🔔 Pedido enviado`, description: `Reposição de ${item.label} solicitada.` });
+                    setActiveTab('');
+                  }}
+                  className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-slate-200 transition-all text-slate-700 font-bold group"
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5 text-slate-400 group-hover:text-slate-600" />
+                    <span className="text-sm">{item.label}</span>
+                  </div>
+                  <Plus className="h-4 w-4 text-slate-300 group-hover:text-slate-500" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
