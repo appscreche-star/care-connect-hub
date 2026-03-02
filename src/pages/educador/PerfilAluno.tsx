@@ -274,12 +274,9 @@ const PerfilAluno = () => {
       setSleepCount(todaySleeps.length);
     }
 
-    const lastFeeding = hoje.find(r => r.tipo_registro === 'alimentacao');
+    const lastFeeding = hoje.find(r => r.tipo_registro === 'alimentacao' && r.detalhes?.status !== 'Mamadeira');
     if (lastFeeding && shouldSync('alimentacao')) {
-      // Fix: Don't reset if it's a bottle feeding entry unless it's a state change
-      if (lastFeeding.detalhes?.status !== 'Mamadeira') {
-        setSelectedFeeding(lastFeeding.detalhes?.status ?? null);
-      }
+      setSelectedFeeding(lastFeeding.detalhes?.status ?? null);
     }
 
     // Sync hygiene counts
@@ -298,6 +295,18 @@ const PerfilAluno = () => {
         count: cocoRecords.length,
         tipo: lastCoco?.detalhes?.tipo ?? null
       });
+    }
+
+    // Sync temperature
+    const lastHealth = hoje.find(r => r.tipo_registro === 'saude');
+    if (lastHealth && shouldSync('temperatura')) {
+      setTempOption(lastHealth.detalhes?.status === 'Febre' ? 'febre' : 'normal');
+    }
+
+    // Sync quick notes
+    if (shouldSync('recado')) {
+      const todayRecados = hoje.filter(r => r.tipo_registro === 'recado');
+      setRecadoList(todayRecados.map(r => r.detalhes?.mensagem).filter(Boolean));
     }
   }, [registros]);
 
