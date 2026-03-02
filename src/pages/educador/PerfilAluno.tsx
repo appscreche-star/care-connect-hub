@@ -155,13 +155,18 @@ const PerfilAluno = () => {
   const [checkedIn, setCheckedIn] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [sleeping, setSleeping] = useState(false);
-  const [sleepCount, setSleepCount] = useState(0);
+
   const [mlBottle, setMlBottle] = useState('');
+  const [tempOption, setTempOption] = useState<'normal' | 'febre' | null>(null);
+  const [recadoList, setRecadoList] = useState<string[]>([]);
+  const [mamadeiraEnabled, setMamadeiraEnabled] = useState(false);
+  const [mamadeiraTime, setMamadeiraTime] = useState('');
   const [selectedFeeding, setSelectedFeeding] = useState<string | null>(null);
 
   // Hygiene counters & states
   const [xixi, setXixi] = useState({ count: 0, tipo: null as string | null });
   const [coco, setCoco] = useState({ count: 0, tipo: null as string | null });
+  const [sleepCount, setSleepCount] = useState(0);
 
   // Album state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -313,86 +318,127 @@ const PerfilAluno = () => {
       {/* ACTION GRID */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-        {/* Col 1: Feeding & Sleep */}
-        <div className="md:col-span-5 space-y-4">
+        {/* ALIMENTAÇÃO */}
+        <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
+          <h3 className="text-[11px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <UtensilsCrossed className="h-3.5 w-3.5" /> Alimentação
+          </h3>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {[
+              { label: 'Aceitou tudo', emoji: '🥗' },
+              { label: 'Aceitou metade', emoji: '🥣' },
+              { label: 'Recusou', emoji: '❌' }
+            ].map(opt => (
+              <button
+                key={opt.label}
+                onClick={() => { setSelectedFeeding(opt.label); handleAction('alimentacao', { status: opt.label, ml: mlBottle }, ''); }}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl text-[9px] font-black uppercase border-2 transition-all",
+                  selectedFeeding === opt.label
+                    ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200"
+                    : "bg-muted/30 text-muted-foreground border-transparent hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700"
+                )}
+              >
+                <span className="text-xl">{opt.emoji}</span>
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
-          {/* ALIMENTAÇÃO */}
-          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5">
-            <h3 className="text-[11px] font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <UtensilsCrossed className="h-3.5 w-3.5" /> Alimentação
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {[
-                { label: 'Aceitou tudo', emoji: '🥗' },
-                { label: 'Aceitou metade', emoji: '🥣' },
-                { label: 'Recusou', emoji: '❌' }
-              ].map(opt => (
-                <button
-                  key={opt.label}
-                  onClick={() => { setSelectedFeeding(opt.label); handleAction('alimentacao', { status: opt.label, ml: mlBottle }, ''); }}
-                  className={cn(
-                    "flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl text-[9px] font-black uppercase border-2 transition-all",
-                    selectedFeeding === opt.label
-                      ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200"
-                      : "bg-muted/30 text-muted-foreground border-transparent hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700"
-                  )}
-                >
-                  <span className="text-xl">{opt.emoji}</span>
-                  {opt.label}
-                </button>
-              ))}
+          {/* Mamadeira – opcional */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Toggle
+                pressed={mamadeiraEnabled}
+                onPressedChange={pressed => {
+                  setMamadeiraEnabled(pressed);
+                  if (!pressed) {
+                    setMlBottle('');
+                    setMamadeiraTime('');
+                  }
+                }}
+                className={cn(
+                  "rounded-xl h-10 px-4 font-black text-[10px] uppercase transition-all",
+                  mamadeiraEnabled ? "bg-orange-100 text-orange-600 border-orange-200" : "bg-muted/30 text-muted-foreground border-transparent"
+                )}
+              >
+                Mamadeira?
+              </Toggle>
             </div>
-            <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-4 py-2">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider shrink-0">Mamadeira</span>
-              <Input
-                placeholder="0 ml"
-                type="number"
-                value={mlBottle}
-                onChange={e => setMlBottle(e.target.value)}
-                onBlur={e => { if (e.target.value) handleAction('alimentacao', { ml: e.target.value, status: selectedFeeding || 'Registrado' }, ''); }}
-                className="flex-1 h-8 font-black text-sm bg-transparent border-none focus:ring-0 p-0 text-right"
-              />
-              <span className="text-[10px] text-muted-foreground font-bold">ml/dia</span>
-            </div>
-          </Card>
 
-          {/* CONTROLE DE SONO */}
-          <Card className="rounded-[2rem] border-none shadow-sm bg-indigo-500 p-5 text-white">
-            <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
-              <MoonIcon className="h-3.5 w-3.5" /> Controle de Soneca
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <p className="text-xl font-black">{sleeping ? 'Dormindo...' : 'Acordado'}</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[10px] font-bold opacity-60 uppercase">Dormiu hoje:</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setSleepCount(c => Math.max(0, c - 1))}
-                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
-                    >−</button>
-                    <span className="text-sm font-black tabular-nums w-4 text-center">{sleepCount}</span>
-                    <button
-                      onClick={() => { handleAction('sono', { status: 'dormindo', vezes: sleepCount + 1 }, ''); setSleepCount(c => c + 1); }}
-                      className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
-                    >+</button>
-                  </div>
-                  <span className="text-[10px] font-bold opacity-60">{sleepCount === 1 ? 'vez' : 'vezes'}</span>
+            {mamadeiraEnabled && (
+              <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    type="time"
+                    value={mamadeiraTime}
+                    onChange={e => setMamadeiraTime(e.target.value)}
+                    className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0"
+                  />
+                </div>
+                <div className="flex items-center gap-2 bg-muted/30 rounded-2xl px-3 py-2">
+                  <span className="text-[10px] font-black text-muted-foreground uppercase">ML</span>
+                  <Input
+                    placeholder="0"
+                    type="number"
+                    value={mlBottle}
+                    onChange={e => setMlBottle(e.target.value)}
+                    onBlur={e => { if (e.target.value) handleAction('alimentacao', { ml: e.target.value, status: selectedFeeding || 'Mamadeira' }, ''); }}
+                    className="flex-1 h-7 border-none bg-transparent focus:ring-0 text-xs font-bold p-0 text-right"
+                  />
                 </div>
               </div>
-              <Button
-                size="lg"
-                className={cn(
-                  "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90 shrink-0",
-                  sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20 text-white hover:bg-white/30"
-                )}
-                onClick={() => handleAction('sono', { status: sleeping ? 'acordado' : 'dormindo' }, '')}
-              >
-                <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-indigo-600" : "")} />
-              </Button>
+            )}
+          </div>
+        </Card>
+
+        {/* CONTROLE DE SONO */}
+        <Card className="rounded-[2rem] border-none shadow-sm bg-indigo-500 p-5 text-white">
+          <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
+            <MoonIcon className="h-3.5 w-3.5" /> Dormiu?
+          </h3>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-xl font-black">{sleeping ? 'Sim' : 'Não'}</p>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-[10px] font-bold opacity-60 uppercase tracking-tighter">Dormiu hoje:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSleepCount(c => Math.max(0, c - 1));
+                    }}
+                    className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
+                  >−</button>
+                  <span className="text-sm font-black tabular-nums w-4 text-center">{sleepCount}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction('sono', { status: 'dormiu', total_vezes: sleepCount + 1 }, '');
+                      setSleepCount(c => c + 1);
+                    }}
+                    className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black hover:bg-white/30"
+                  >+</button>
+                </div>
+              </div>
             </div>
-          </Card>
-        </div>
+            <Button
+              size="lg"
+              className={cn(
+                "rounded-2xl h-14 w-14 p-0 shadow-2xl transition-all active:scale-90 shrink-0",
+                sleeping ? "bg-white text-indigo-600 hover:bg-white/90" : "bg-white/20 text-white hover:bg-white/30"
+              )}
+              onClick={() => {
+                const newStatus = !sleeping;
+                setSleeping(newStatus);
+                handleAction('sono', { status: newStatus ? 'dormiu' : 'acordou' }, '');
+              }}
+            >
+              <MoonIcon className={cn("h-6 w-6", sleeping ? "fill-indigo-600" : "")} />
+            </Button>
+          </div>
+        </Card>
 
         {/* Col 2: Hygiene & Mood */}
         <div className="md:col-span-4 space-y-4">
@@ -469,7 +515,7 @@ const PerfilAluno = () => {
                   key={m.label}
                   onClick={() => { setSelectedMood(m.label); handleAction('bemestar', { humor: m.label, emoji: m.emoji }, ''); }}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2.5 rounded-2xl text-xs font-black border-2 transition-all text-left",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-black border-2 transition-all text-left",
                     selectedMood === m.label
                       ? "bg-amber-400 text-white border-amber-400 shadow-md"
                       : "border-border/40 text-muted-foreground hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
@@ -485,56 +531,106 @@ const PerfilAluno = () => {
 
         {/* Col 3: Tools & Recados */}
         <div className="md:col-span-3 space-y-4">
-          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5 space-y-3">
-            <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Ações</h3>
+          <Card className="rounded-[2rem] border-none shadow-sm bg-card p-5 space-y-4">
+            <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Ações Rápidas</h3>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setActiveTab('ocorrencia')}
-                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all"
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all active:scale-95"
               >
                 <AlertTriangle className="h-5 w-5" />
                 <span className="text-[9px] font-black uppercase">Ocorrência</span>
               </button>
               <button
                 onClick={() => setActiveTab('album')}
-                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all"
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 border-border/40 text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all active:scale-95"
               >
                 <Camera className="h-5 w-5" />
                 <span className="text-[9px] font-black uppercase">Álbum</span>
               </button>
             </div>
-            <div className="flex items-center justify-between bg-rose-50/60 rounded-2xl px-3 py-2.5 border-2 border-rose-100">
+
+            {/* Temperatura Section */}
+            <div className="space-y-3 pt-2 border-t border-border/40">
               <div className="flex items-center gap-2">
                 <Thermometer className="h-4 w-4 text-rose-500" />
-                <span className="text-[10px] font-black text-rose-700 uppercase">Temperatura</span>
+                <span className="text-[10px] font-black text-rose-700 uppercase tracking-wider">Temperatura</span>
               </div>
-              <Input
-                type="number"
-                placeholder="36.5"
-                step="0.1"
-                className="w-16 h-7 text-xs font-black bg-transparent border-none focus:ring-0 text-right p-0"
-                onBlur={e => { if (e.target.value) handleAction('saude', { temperatura: e.target.value }, ''); }}
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setTempOption('normal');
+                    handleAction('saude', { status: 'Normal', temperatura: '36.5' }, '');
+                  }}
+                  className={cn(
+                    "rounded-xl py-2 text-[10px] font-black uppercase border-2 transition-all",
+                    tempOption === 'normal' ? "bg-rose-500 text-white border-rose-500 shadow-md" : "border-border/40 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Normal
+                </button>
+                <button
+                  onClick={() => setTempOption('febre')}
+                  className={cn(
+                    "rounded-xl py-2 text-[10px] font-black uppercase border-2 transition-all",
+                    tempOption === 'febre' ? "bg-rose-500 text-white border-rose-500 shadow-md" : "border-border/40 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Febre
+                </button>
+              </div>
+              {tempOption === 'febre' && (
+                <div className="flex items-center gap-2 bg-rose-50 rounded-xl px-3 py-2 animate-in slide-in-from-top-2 duration-200">
+                  <span className="text-[10px] font-black text-rose-600 uppercase">Graus</span>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="38.5"
+                    className="h-6 border-none bg-transparent focus:ring-0 text-xs font-bold text-rose-900 p-0 text-right"
+                    onBlur={e => {
+                      if (e.target.value) handleAction('saude', { status: 'Febre', temperatura: e.target.value }, '');
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </Card>
 
-          <Card className="rounded-[2rem] border-none shadow-sm bg-cyan-600 p-5 text-white flex flex-col" style={{ minHeight: '260px' }}>
+          <Card className="rounded-[2rem] border-none shadow-sm bg-cyan-600 p-5 text-white flex flex-col" style={{ minHeight: '300px' }}>
             <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
               <MessageSquare className="h-3.5 w-3.5" /> Recado Rápido
             </h3>
+
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 pr-1 scrollbar-thin scrollbar-thumb-white/20">
+              {recadoList.length === 0 && (
+                <p className="text-[10px] opacity-40 italic py-4 text-center">Nenhum recado enviado hoje.</p>
+              )}
+              {recadoList.map((msg, i) => (
+                <div key={i} className="bg-white/10 rounded-xl p-3 animate-in slide-in-from-bottom-2 duration-300">
+                  <p className="text-xs font-medium leading-relaxed">{msg}</p>
+                  <span className="text-[8px] opacity-50 block mt-1 uppercase font-black">Enviado agora</span>
+                </div>
+              ))}
+            </div>
+
             <Textarea
               id="recado-educador"
               placeholder="Ex: Dormiu bem hoje..."
-              className="flex-1 bg-white/10 border-none rounded-2xl resize-none placeholder:text-white/40 font-bold mb-3 focus-visible:ring-white/20 p-3 text-sm"
+              className="bg-white/10 border-none rounded-2xl resize-none placeholder:text-white/40 font-bold mb-3 focus-visible:ring-white/20 p-3 text-sm min-h-[80px]"
             />
             <Button
-              className="w-full rounded-2xl bg-white text-cyan-700 font-black hover:bg-white/90 shadow-xl active:scale-95 h-10"
+              className="w-full rounded-2xl bg-white text-cyan-700 font-black hover:bg-white/90 shadow-xl active:scale-95 h-12"
               onClick={() => {
                 const el = document.getElementById('recado-educador') as HTMLTextAreaElement;
-                if (el?.value.trim()) { handleAction('recado', { mensagem: el.value }, ''); el.value = ''; }
+                if (el?.value.trim()) {
+                  const msg = el.value.trim();
+                  handleAction('recado', { mensagem: msg }, '');
+                  setRecadoList(prev => [msg, ...prev]);
+                  el.value = '';
+                }
               }}
             >
-              ENVIAR
+              ENVIAR RECADO
             </Button>
           </Card>
         </div>
