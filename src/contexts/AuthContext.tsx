@@ -15,8 +15,8 @@ interface AuthContextType {
 
 export const DEFAULT_INST: Instituicao = {
   id: '00000000-0000-0000-0000-000000000000', // Valid dummy UUID
-  nome: 'Elo Creche',
-  logo_url: '/placeholder.svg',
+  nome: 'Escola ABC da Criança',
+  logo_url: '/images/logo-escola.jpg',
   cor_primaria: '234 89% 74%',
 };
 
@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (!error) {
       // Create default if none exists
       const { data: newInst } = await supabase.from('instituicoes').insert([
-        { nome: 'Elo Creche', cor_primaria: '234 89% 74%', logo_url: '/placeholder.svg' }
+        { nome: 'Escola ABC da Criança', cor_primaria: '234 89% 74%', logo_url: '/images/logo-escola.jpg' }
       ]).select().single();
       if (newInst) setInst(newInst);
     }
