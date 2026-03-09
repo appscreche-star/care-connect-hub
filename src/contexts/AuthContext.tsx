@@ -15,8 +15,8 @@ interface AuthContextType {
 
 export const DEFAULT_INST: Instituicao = {
   id: '00000000-0000-0000-0000-000000000000', // Valid dummy UUID
-  nome: 'Elo Creche',
-  logo_url: '/placeholder.svg',
+  nome: 'Escola ABC da Criança',
+  logo_url: '/images/logo-escola.jpg',
   cor_primaria: '234 89% 74%',
 };
 
