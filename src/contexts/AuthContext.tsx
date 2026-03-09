@@ -37,12 +37,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchInstituicao = useCallback(async () => {
     const { data, error } = await supabase.from('instituicoes').select('*').limit(1).maybeSingle();
     if (data) {
+      // Ensure name and logo are up to date
+      if (data.nome !== 'Escola ABC da Criança' || data.logo_url !== '/images/logo-escola.png') {
+        await supabase.from('instituicoes').update({ nome: 'Escola ABC da Criança', logo_url: '/images/logo-escola.png' }).eq('id', data.id);
+        data.nome = 'Escola ABC da Criança';
+        data.logo_url = '/images/logo-escola.png';
+      }
       setInst(data);
       if (data.cor_primaria) {
         document.documentElement.style.setProperty('--primary', data.cor_primaria);
       }
     } else if (!error) {
-      // Create default if none exists
       const { data: newInst } = await supabase.from('instituicoes').insert([
         { nome: 'Escola ABC da Criança', cor_primaria: '234 89% 74%', logo_url: '/images/logo-escola.png' }
       ]).select().single();
