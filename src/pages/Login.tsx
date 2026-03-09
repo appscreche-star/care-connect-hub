@@ -77,7 +77,7 @@ const Login = () => {
         <div className="h-2 w-full bg-gradient-to-r from-primary via-indigo-400 to-purple-500" />
         <CardHeader className="items-center text-center space-y-3 pt-8 pb-4">
           <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-2 shadow-inner group">
-            <img src={instituicao.logo_url} alt="Logo" className="h-14 w-14 group-hover:scale-110 transition-transform duration-500" />
+            <img src={instituicao.logo_url} alt="Logo" className="h-20 w-20 object-contain group-hover:scale-110 transition-transform duration-500" />
           </div>
           <CardTitle className="text-3xl font-black text-foreground tracking-tight">{instituicao.nome}</CardTitle>
           <CardDescription className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest leading-none mt-1">Portal de Acesso Unificado</CardDescription>
