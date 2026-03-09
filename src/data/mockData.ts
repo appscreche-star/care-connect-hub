@@ -81,8 +81,8 @@ export interface Ocorrencia {
 
 export const instituicao: Instituicao = {
   id: '1',
-  nome: 'Creche Arco-Íris',
-  logo_url: '/placeholder.svg',
+  nome: 'Escola ABC da Criança',
+  logo_url: '/images/logo-escola.png',
   cor_primaria: '234 89% 74%',
 };
 
